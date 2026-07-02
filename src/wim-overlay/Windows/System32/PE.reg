@@ -78,3 +78,17 @@ Windows Registry Editor Version 5.00
 @="7-Zip.lzma"
 [HKEY_CLASSES_ROOT\7-Zip.lzma\shell\open\command]
 @="\"X:\\Program Files\\easy7zip\\7zFM.exe\" \"%1\""
+
+; Remove PowerShell from context menus (PowerShell is not installed)
+[-HKEY_CLASSES_ROOT\Directory\Background\shell\Powershell]
+[-HKEY_CLASSES_ROOT\Directory\shell\Powershell]
+
+; Add About WPEFW context menu item at the bottom of the Desktop context menu
+[HKEY_CLASSES_ROOT\Directory\Background\shell\AboutWPEFW]
+@="About WPEFW"
+"Position"="Bottom"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\AboutWPEFW\command]
+@="PECMD.exe MESS (c) WPEFW @About WPEFW"
+
+

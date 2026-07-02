@@ -1,28 +1,4 @@
 {
-  "JS_README": {
-    "can_be_omitted_section": true,
-    "description": [
-      "this is WinXShell's configure file.",
-      "you can specify some settings for desktop,taskbar,etc."
-    ]
-  },
-  "JS_JMACRO": {
-    "can_be_omitted_section": true,
-    "description": [
-      "specify alias name for built-in paramater names which using in jcfg file.",
-      "MACRO format:<built-in paramater name>,<alias name>,<description>",
-      "<built-in paramater name>:cann't be modified.",
-      "<alias name>: specify alias name which start with [::] for built-in paramater name",
-      "<description>: the description of built-in paramater name, cann't be modified."
-    ],
-    "JKEYNAME": [
-      ["JS_JMACRO", "",           "section name. define the alias name for *i18n*"],
-      ["JS_STARTMENU", "::STARTMENU",          "section name. specify some settings for startmenu."],
-      ["JS_QUICKLAUNCH", "::QL",      "section name. specify some settings for quicklanchbar."],
-      ["wallpaperstyle", "::WP_MODE",  "property name. wallpaper's style value:0-strech(default);1-tile;2-center"],
-      ["wallpaper", "::WP",            "property name."]
-    ]
-  },
   "JS_DAEMON": {
     "clockarea_click": {
       "command": "##{JVAR_MODULEPATH}\\#{JVAR_MODULENAME}",
@@ -47,19 +23,14 @@
     "cascademenu": {
       "#WinXNew": "Directory\\Background\\shell\\WinXNew"
     },
-    "#iconsize": 32,
-    "bkcolor comment": "green for eyes",
-    "bkcolor": [199, 237, 204],
-    "wallpaperstyle comment": "value:0-strech(default);1-tile;2-center",
-    "::WP_MODE": 0,
-    "wallpaper comment": "if it is not set or be empty, will use system's wallpaper image file",
-    "::WP": "wallpaper.jpg"
+    "iconsize": 32,
+    "wallpaperstyle": 0,
+    "wallpaper": "wallpaper.jpg"
   },
   "JS_THEMES": {
     "blue": {
       "taskbar": {
         "bkcolor": [0, 120, 215],
-        "#bkmode_values": "opaque; transparent; acrylic",
         "bkmode": "opaque",
         "transparency": 100,
         "task_line_color": [238, 238, 238],
@@ -69,7 +40,6 @@
     "dark": {
       "taskbar": {
         "bkcolor": [38, 38, 38],
-        "#bkmode_values": "opaque; transparent; acrylic",
         "bkmode": "transparent",
         "transparency": 64,
         "task_line_color": [238, 238, 238],
@@ -80,7 +50,6 @@
       "taskbar": {
         "style": "light",
         "bkcolor": [238, 238, 238],
-        "#bkmode_values": "opaque; transparent; acrylic",
         "bkmode": "acrylic",
         "transparency": 100,
         "task_line_color": [0, 120, 215],
@@ -92,18 +61,18 @@
     "visible": true,
     "smallicon": false,
     "thumbnail": true,
-    "task_close_button": true,
+    "task_close_button": false,
     "no_task_title": false,
     "userebar": false,
-    "theme": "dark",
+    "theme": "light",
     "height": 40
   },
-  "::STARTMENU": {
+  "JS_STARTMENU": {
     "start_pushed_bkcolor": [0, 100, 180],
     "start_icon_comment": "theme;empty;custom",
     "start_icon": "theme",
     "start_command": "",
-    "notopitems": false,
+    "notopitems": true,
     "noprograms": false,
     "nosettings": true,
     "nobrowse": false,
@@ -125,7 +94,7 @@
       }
     }
   },
-  "::QL": {
+  "JS_QUICKLAUNCH": {
     "maxiconsinrow": 20,
     "#3rd_filename": "",
     "3rd_startup_arguments": "",
@@ -138,8 +107,8 @@
   "JS_NOTIFYAREA": {
     "hide_toggle_button": false,
     "hide_showdesktop_button": false,
-    "#handle_system_network": true,
-    "#handle_system_volume": true
+    "handle_system_network": true,
+    "handle_system_volume": true
   },
   "JS_NOTIFYCLOCK": {
     "visible": true

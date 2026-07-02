@@ -272,6 +272,10 @@ verify: $(VERIFY_WIMS)
 deploy-server:
 	python3 scripts/deploy_server.py
 
+.PHONY: deploy
+deploy:
+	@curl -s -X POST http://localhost:8080/deploy | grep -q '"status": "ok"' && echo "Deployment successful!" || (echo "Deployment failed!" && exit 1)
+
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)

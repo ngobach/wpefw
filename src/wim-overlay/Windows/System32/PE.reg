@@ -84,11 +84,41 @@ Windows Registry Editor Version 5.00
 [-HKEY_CLASSES_ROOT\Directory\shell\Powershell]
 
 ; Add About WPEFW context menu item at the bottom of the Desktop context menu
-[HKEY_CLASSES_ROOT\Directory\Background\shell\AboutWPEFW]
-@="About WPEFW"
+; Load Packages context menu item
+[HKEY_CLASSES_ROOT\Directory\Background\shell\LoadPackages]
+@="Load Packages"
 "Position"="Bottom"
+"Icon"="shell32.dll,162"
 
-[HKEY_CLASSES_ROOT\Directory\Background\shell\AboutWPEFW\command]
-@="PECMD.exe MESS (c) WPEFW @About WPEFW"
+[HKEY_CLASSES_ROOT\Directory\Background\shell\LoadPackages\command]
+@="\"X:\\Windows\\System32\\PECMD.EXE\" LOAD \"X:\\Windows\\System32\\PECMD-LoadPkgs.ini\""
+
+; Unload Packages context menu item
+[HKEY_CLASSES_ROOT\Directory\Background\shell\UnloadPackages]
+@="Unload Packages"
+"Position"="Bottom"
+"Icon"="shell32.dll,131"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\UnloadPackages\command]
+@="\"X:\\Windows\\System32\\PECMD.EXE\" LOAD \"X:\\Windows\\System32\\PECMD-UnloadPkgs.ini\""
+
+
+; Show "This PC" (My Computer) and hide Recycle Bin icon on the desktop
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel]
+"{20D04FE0-3AEA-1069-A2D8-08002B30309D}"=dword:00000000
+"{645FF040-5081-101B-9F08-00AA002F954E}"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\ClassicStartMenu]
+"{20D04FE0-3AEA-1069-A2D8-08002B30309D}"=dword:00000000
+"{645FF040-5081-101B-9F08-00AA002F954E}"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel]
+"{20D04FE0-3AEA-1069-A2D8-08002B30309D}"=dword:00000000
+"{645FF040-5081-101B-9F08-00AA002F954E}"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\ClassicStartMenu]
+"{20D04FE0-3AEA-1069-A2D8-08002B30309D}"=dword:00000000
+"{645FF040-5081-101B-9F08-00AA002F954E}"=dword:00000001
+
 
 

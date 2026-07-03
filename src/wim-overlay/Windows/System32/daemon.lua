@@ -9,6 +9,7 @@ local DOWNLOAD_URL = string.format("http://%s:%d/download", HOST_IP, PORT)
 
 local current_version = 0
 local deployed_versions = {}
+local is_first_check = true
 
 -- Load Lua-cURL library
 local has_curl, curl = pcall(require, "cURL")
@@ -128,17 +129,23 @@ local function main()
       local next_ver = body:match('"version"%s*:%s*(%d+)')
       next_ver = tonumber(next_ver)
       
-      if next_ver and next_ver > current_version then
-        print(string.format("[Daemon] Update detected: v%d. Downloading payload...", next_ver))
-        
-        local temp_dir = os.getenv("TEMP") or "X:\\Windows\\Temp"
-        local zip_path = string.format("%s\\payload_v%d.zip", temp_dir, next_ver)
-        
-        if download_file(DOWNLOAD_URL, zip_path) then
-          deploy_payload(zip_path, next_ver)
+      if next_ver then
+        if is_first_check then
+          print(string.format("[Daemon] Initialized to server version: v%d. Ignoring first deployment.", next_ver))
           current_version = next_ver
-        else
-          print("[Daemon] Download failed for version " .. next_ver)
+          is_first_check = false
+        elseif next_ver > current_version then
+          print(string.format("[Daemon] Update detected: v%d. Downloading payload...", next_ver))
+          
+          local temp_dir = os.getenv("TEMP") or "X:\\Windows\\Temp"
+          local zip_path = string.format("%s\\payload_v%d.zip", temp_dir, next_ver)
+          
+          if download_file(DOWNLOAD_URL, zip_path) then
+            deploy_payload(zip_path, next_ver)
+            current_version = next_ver
+          else
+            print("[Daemon] Download failed for version " .. next_ver)
+          end
         end
       end
     elseif err == "timeout" then

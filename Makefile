@@ -3,7 +3,7 @@ SRC_OVERLAY   := src/wim-overlay
 
 BUILD_DIR     := build
 BUILD_OVERLAY := build/overlay
-BUILD_WIM     := build/wim/winpe.wim
+BUILD_WIM     := build/winpe.wim
 
 REGISTRY      := zot.ngobach.com
 NTLOADER_OCI  := $(REGISTRY)/bootie/ntloader:v1
@@ -18,8 +18,7 @@ WIN_DLLS_OCI   := $(REGISTRY)/bootie/windlls:v1
 
 APPS_SRC   := src/apps
 APPS_BUILD := build/apps
-APPS_IMG   := build/apps.img
-APPS_QCOW2 := build/apps.qcow2
+APPS_RAW   := build/apps.raw
 APPS_SIZE  := 64
 APPS      := $(patsubst $(APPS_SRC)/%/,%,$(wildcard $(APPS_SRC)/*/))
 APP_WIMS  := $(addprefix $(APPS_BUILD)/pkgs/,$(addsuffix .wim,$(APPS)))
@@ -112,7 +111,7 @@ $(BUILD_WIM): check-deps $(BUILD_OVERLAY)
 build: $(BUILD_WIM)
 
 .PHONY: run
-run: $(BUILD_WIM) build/.ntloader.stamp build/.apps.stamp
+run: build/boot.raw build/.apps.stamp
 	rm -f /tmp/qmp.sock
 	qemu-system-x86_64 \
 		-M q35 \
@@ -123,9 +122,18 @@ run: $(BUILD_WIM) build/.ntloader.stamp build/.apps.stamp
 		-s \
 		-debugcon file:/tmp/debugcon.log \
 		-device usb-ehci,id=ehci \
-		-drive file=fat:rw:build/wim,format=raw \
+		-drive file=build/boot.raw,format=raw \
 		-drive file=fat:rw:assets/grub4dos,format=raw \
 		-qmp unix:/tmp/qmp.sock,server,nowait
+
+build/boot.raw: $(BUILD_WIM) build/.ntloader.stamp
+	rm -f $@
+	dd if=/dev/zero of=$@ bs=1M count=560
+	printf "y\nedit 1\n0C\nn\n2048\n1144832\nflag 1\nedit 2\n0\nedit 3\n0\nedit 4\n0\nwrite\nquit\n" | fdisk -e $@
+	mformat -i $@@@2048 -F ::
+	mcopy -i $@@@2048 $(BUILD_WIM) ::/winpe.wim
+	mcopy -i $@@@2048 build/ntloader/ntloader ::/ntloader
+	mcopy -i $@@@2048 build/ntloader/initrd.cpio ::/initrd.cpio
 
 build/.ntloader.stamp:
 	rm -rf build/ntloader
@@ -133,9 +141,6 @@ build/.ntloader.stamp:
 	oras pull $(NTLOADER_OCI) -o build/ntloader
 	unzip -o build/ntloader/ntloader.zip ntloader initrd.cpio -d build/ntloader/
 	rm -f build/ntloader/ntloader.zip
-	mkdir -p build/wim
-	cp build/ntloader/ntloader build/wim/ntloader
-	cp build/ntloader/initrd.cpio build/wim/initrd.cpio
 	touch $@
 
 build/.ulua.stamp:
@@ -221,7 +226,7 @@ $(APPS_BUILD)/pkgs/%.wim: FORCE
 apps: $(APP_WIMS)
 
 build/.apps.stamp: $(APPS_SRC) $(APP_WIMS)
-	rm -rf $(APPS_IMG) $(APPS_QCOW2)
+	rm -rf $(APPS_RAW)
 	mkdir -p $(APPS_BUILD)
 	cp $(APPS_SRC)/* $(APPS_BUILD)/ 2>/dev/null || true
 	rm -f $(APPS_BUILD)/Makefile 2>/dev/null || true
@@ -230,16 +235,14 @@ build/.apps.stamp: $(APPS_SRC) $(APP_WIMS)
 		name=$$(basename "$$w" .wim); \
 		[ -d "$(APPS_SRC)/$$name" ] || rm -f "$$w"; \
 	done
-	dd if=/dev/zero of=$(APPS_IMG) bs=1M count=$(APPS_SIZE)
-	mformat -i $(APPS_IMG) -F ::
-	mcopy -i $(APPS_IMG) -s $(APPS_BUILD)/* ::
-	qemu-img convert -O qcow2 $(APPS_IMG) $(APPS_QCOW2)
-	rm -f $(APPS_IMG)
+	dd if=/dev/zero of=$(APPS_RAW) bs=1M count=$(APPS_SIZE)
+	mformat -i $(APPS_RAW) -F ::
+	mcopy -i $(APPS_RAW) -s $(APPS_BUILD)/* ::
 	touch $@
 
 .PHONY: apps-attach
 apps-attach:
-	scripts/qmp.py '{"execute":"blockdev-add","arguments":{"node-name":"apps_node","driver":"qcow2","file":{"driver":"file","filename":"$(APPS_QCOW2)"}}}'
+	scripts/qmp.py '{"execute":"blockdev-add","arguments":{"node-name":"apps_node","driver":"raw","file":{"driver":"file","filename":"$(APPS_RAW)"}}}'
 	scripts/qmp.py '{"execute":"device_add","arguments":{"driver":"usb-storage","drive":"apps_node","id":"apps_usb","removable":true}}'
 
 .PHONY: apps-detach
@@ -253,7 +256,7 @@ apps-replug:
 	scripts/qmp.py '{"execute":"blockdev-del","arguments":{"node-name":"apps_node"}}' || true
 	$(RM) build/.apps.stamp
 	$(MAKE) build/.apps.stamp
-	scripts/qmp.py '{"execute":"blockdev-add","arguments":{"node-name":"apps_node","driver":"qcow2","file":{"driver":"file","filename":"$(APPS_QCOW2)"}}}'
+	scripts/qmp.py '{"execute":"blockdev-add","arguments":{"node-name":"apps_node","driver":"raw","file":{"driver":"file","filename":"$(APPS_RAW)"}}}'
 	scripts/qmp.py '{"execute":"device_add","arguments":{"driver":"usb-storage","drive":"apps_node","id":"apps_usb","removable":true}}'
 
 VERIFY_WIMS := $(if $(APP),$(APPS_BUILD)/pkgs/$(APP).wim,$(APP_WIMS))

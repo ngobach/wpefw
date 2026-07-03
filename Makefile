@@ -116,9 +116,9 @@ run: $(BUILD_WIM) build/.ntloader.stamp build/.apps.stamp
 	rm -f /tmp/qmp.sock
 	qemu-system-x86_64 \
 		-M q35 \
-        -m 1G \
-        -smp cores=4,threads=1 \
-        -accel tcg,thread=multi,tb-size=1024 \
+		-m 2G \
+		-smp cores=4,threads=1 \
+		-accel tcg,thread=multi,tb-size=1024 \
 		-bios resources/OVMF.fd \
 		-s \
 		-debugcon file:/tmp/debugcon.log \

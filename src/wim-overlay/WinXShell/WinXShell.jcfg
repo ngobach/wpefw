@@ -64,7 +64,7 @@
     "task_close_button": false,
     "no_task_title": false,
     "userebar": false,
-    "theme": "light",
+    "theme": "dark",
     "height": 40
   },
   "JS_STARTMENU": {
@@ -80,19 +80,9 @@
     "nofind": true,
     "norun": false,
     "nologoff": true,
-    "norestart": false,
+    "norestart": true,
     "noshutdown": false,
-    "noterm": true,
-    "commands": {
-      "reboot": {
-        "command": "Wpeutil.exe",
-        "parameters": "Reboot"
-      },
-      "shutdown": {
-        "command": "Wpeutil.exe",
-        "parameters": "Shutdown"
-      }
-    }
+    "noterm": true
   },
   "JS_QUICKLAUNCH": {
     "maxiconsinrow": 20,

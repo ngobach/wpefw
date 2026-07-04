@@ -273,9 +273,9 @@ verify: $(VERIFY_WIMS)
 		echo; \
 	done
 
-.PHONY: deploy-server
-deploy-server:
-	python3 scripts/deploy_server.py
+.PHONY: rpc-broker
+rpc-broker:
+	python3 scripts/rpc_broker.py
 
 .PHONY: sandbox-build
 sandbox-build:

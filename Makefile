@@ -104,7 +104,8 @@ $(BUILD_WIM): check-deps $(BUILD_OVERLAY)
 		exit 1; \
 	fi
 	mkdir -p $(dir $(BUILD_WIM))
-	cp $(SRC_WIM) $(BUILD_WIM)
+	rm -f $(BUILD_WIM)
+	wimexport $(SRC_WIM) 1 $(BUILD_WIM) --boot
 	wimupdate $(BUILD_WIM) 1 --command="add $(BUILD_OVERLAY) /"
 
 .PHONY: build
@@ -115,6 +116,7 @@ run: build/boot.raw build/.apps.stamp
 	rm -f /tmp/qmp.sock
 	qemu-system-x86_64 \
 		-M q35 \
+		-cpu Skylake-Client-v3 \
 		-m 2G \
 		-smp cores=4,threads=1 \
 		-accel tcg,thread=multi,tb-size=1024 \
@@ -130,10 +132,10 @@ build/boot.raw: $(BUILD_WIM) build/.ntloader.stamp
 	rm -f $@
 	dd if=/dev/zero of=$@ bs=1M count=560
 	printf "y\nedit 1\n0C\nn\n2048\n1144832\nflag 1\nedit 2\n0\nedit 3\n0\nedit 4\n0\nwrite\nquit\n" | fdisk -e $@
-	mformat -i $@@@2048 -F ::
-	mcopy -i $@@@2048 $(BUILD_WIM) ::/winpe.wim
-	mcopy -i $@@@2048 build/ntloader/ntloader ::/ntloader
-	mcopy -i $@@@2048 build/ntloader/initrd.cpio ::/initrd.cpio
+	mformat -i $@@@1048576 -H 2048 -F ::
+	mcopy -i $@@@1048576 $(BUILD_WIM) ::/winpe.wim
+	mcopy -i $@@@1048576 build/ntloader/ntloader ::/ntloader
+	mcopy -i $@@@1048576 build/ntloader/initrd.cpio ::/initrd.cpio
 
 build/.ntloader.stamp:
 	rm -rf build/ntloader

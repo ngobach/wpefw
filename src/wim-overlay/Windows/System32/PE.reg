@@ -132,3 +132,21 @@ Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer]
 "NoPropertiesMyComputer"=dword:00000001
 
+; Correct Program Files directory locations
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion]
+"ProgramFilesDir"="X:\\Program Files"
+"CommonFilesDir"="X:\\Program Files\\Common Files"
+"ProgramFilesDir (x86)"="X:\\Program Files (x86)"
+"CommonFilesDir (x86)"="X:\\Program Files (x86)\\Common Files"
+"CommonW6432Dir"="X:\\Program Files\\Common Files"
+"ProgramW6432Dir"="X:\\Program Files"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion]
+"ProgramFilesDir"="X:\\Program Files (x86)"
+"CommonFilesDir"="X:\\Program Files (x86)\\Common Files"
+"ProgramFilesDir (x86)"="X:\\Program Files (x86)"
+"CommonFilesDir (x86)"="X:\\Program Files (x86)\\Common Files"
+"CommonW6432Dir"="X:\\Program Files\\Common Files"
+"ProgramW6432Dir"="X:\\Program Files"
+
+

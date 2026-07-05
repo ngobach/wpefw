@@ -20,6 +20,13 @@ function App:onLoad()
       Screen:DPI(100)
     end
   end
+
+  WxsHandler.OpenContainingFolder = function(lnkfile, realfile)
+    local parent_dir = realfile:match("(.+)\\")
+    if parent_dir then
+      App:Run("X:\\Program Files\\Explorer++\\Explorer++.exe", '"' .. parent_dir .. '"')
+    end
+  end
 end
 
 function App:onShell()
@@ -29,20 +36,4 @@ end
 
 function Startmenu:Shutdown()
   wxsUI('UI_Shutdown')
-end
-
-Shell.onHotKey['WIN+S'] = function()
-  App:Debug("WIN+S hotkey is pressed.")
-end
-
-Shell.onHotKey['WIN+U'] = function()
-  wxsUI('UI_Shutdown')
-end
-
-Shell.onHotKey['WIN+F'] = function()
-  App:Debug("WIN+F hotkey is pressed.")
-end
-
-Shell.onHotKey['CAPSLOCK x 2'] = function()
-  App:Debug("CAPSLOCK x 2 pressed.")
 end

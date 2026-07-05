@@ -23,8 +23,8 @@ function App:onLoad()
 end
 
 function App:onShell()
-  wxsUI('UI_Volume', 'main.jcfg', '-hidewindow')
-  wxsUI('UI_Wifi', 'main.jcfg', '-hidewindow')
+  -- wxsUI('UI_Volume', 'main.jcfg', '-hidewindow')
+  -- wxsUI('UI_Wifi', 'main.jcfg', '-hidewindow')
 end
 
 function Startmenu:Shutdown()
@@ -33,6 +33,10 @@ end
 
 Shell.onHotKey['WIN+S'] = function()
   App:Debug("WIN+S hotkey is pressed.")
+end
+
+Shell.onHotKey['WIN+U'] = function()
+  wxsUI('UI_Shutdown')
 end
 
 Shell.onHotKey['WIN+F'] = function()

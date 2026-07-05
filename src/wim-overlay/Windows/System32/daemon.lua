@@ -52,6 +52,10 @@ local function http_post(url, payload)
     "Content-Type: application/json",
     "Content-Length: " .. tostring(#payload)
   })
+  c:setopt_writefunction(function(data)
+    -- Discard server response to prevent cURL from writing it to stdout
+    return #data
+  end)
   
   local ok, err = c:perform()
   c:close()

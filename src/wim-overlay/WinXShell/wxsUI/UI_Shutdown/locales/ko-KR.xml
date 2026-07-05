@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Locale>
+    <Font id="16" size="16" name="Segoe UI"  shared="true"  default="true" />
+    <Font id="24" size="24" name="Segoe UI"  shared="true" />
+
+<!-- The description of <Style imagerectstyle="l,t,w,h" /> in main.xml -->
+    <!-- image's source, dest attributes will define with "left,top,width,height" style -->
+    <!-- the origin style is "left,top,right,bottom". -->
+    <!-- the xml file for "Include" tag is also use the same "imagerectstyle" -->
+
+    <MultiLanguage id="Power" value="전원" />
+    <MultiLanguage id="CloseComputer" value="PC 끄기" />
+    <MultiLanguage id="Shutdown" value="종료" />
+    <MultiLanguage id="Restart" value="재시작" />
+    <MultiLanguage id="Hibernate" value="최대절전모드" />
+    <MultiLanguage id="Standby" value="절전모드" />
+</Locale>

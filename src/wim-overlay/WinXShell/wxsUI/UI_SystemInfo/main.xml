@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window size="680,500" caption="0,0,0,32" sizebox="6,6,6,6"  >
+    <Style imagerectstyle="l,t,w,h" />
+    <Include source="scrollbar_ltwh.xml" />
+    <Style name="sec_icon" bkimage="file='sec.ico'" height="16" width="16" padding="15,4,5,0" />
+    <VerticalLayout name="::winborder" style="ct-bd">
+      <VerticalLayout name="::mainframe" style="ct-bk" padding="1,1,1,1">
+        <HorizontalLayout name="::caption" height="32" style="ct-title">
+            <Button bkimage="file='MYPC_16x16.ico'" width="16" height="16" padding="6,6,0,0" />
+            <Label name="::title" text="System" style="ct-title-text" align="left" padding="5,-2,0,0" />
+            <Button name="::minbtn" text="" font="sym" style="ct-sysbutton" hotimage="color='#ff1985da'" width="48" height="32" />
+            <Button name="::closebtn" text="" font="sym" style="ct-sysbutton" hotimage="color='#ffe81123'" width="48" height="32" />
+            <!-- <Button name="::closebtn" bkimage="file='close.png'" width="16" height="16" padding="0,8,8,0" /> -->
+        </HorizontalLayout>
+        <HorizontalLayout name="::content" bordersize="2" style="ct-bdtitle">
+            <VerticalLayout inset="20,5,20,5" vscrollbar="true" padding="0,0,0,5" >
+                <Label name="basic_label" font="16" style="ct-txtinfo" padding="0,0,0,5" />
+                <VerticalLayout height="100">
+                  <HorizontalLayout height="20" >
+                    <Label width="140" name="edition_group" text="Windows Edition" />
+                    <Control height="1" padding="0,12,10,0" style="ct-bkhori" />
+                  </HorizontalLayout>
+                  <HorizontalLayout>
+                  <VerticalLayout padding="0,4,0,0" >
+                    <Label multiline="true" name="edition_edit1" />
+                    <Label multiline="true" name="edition_edit2" />
+                    <Label multiline="true" name="edition_edit3" />
+                  </VerticalLayout>
+                    <Label name="brand_img" width="340" height="72" padding="0,0,5,0" />
+                </HorizontalLayout>
+                </VerticalLayout>
+                <VerticalLayout name="system_info" height="110">
+                    <HorizontalLayout height="20" >
+                    <Label name="system_group" width="100" />
+                    <Control height="1" padding="0,12,10,0" style="ct-bkhori" />
+                  </HorizontalLayout>
+                  <HorizontalLayout>
+                    <VerticalLayout width="180" padding="0,4,0,0" >
+                      <Label name="mfgr_label" />
+                      <Label name="model_label" />
+                      <Label name="cpu_label" />
+                      <Label name="mem_label" />
+                      <Label name="arch_label" />
+                    </VerticalLayout>
+                    <VerticalLayout padding="0,4,0,0">
+                      <Label name="mfgr_text" />
+                      <Label name="model_text" />
+                      <Label name="cpu_text" />
+                      <Label name="mem_text" />
+                      <Label name="arch_text" />
+                    </VerticalLayout>
+                    <Label name="oem_logo" width="120" height="120" />
+                  </HorizontalLayout>
+                </VerticalLayout>
+                <VerticalLayout height="130">
+                  <HorizontalLayout height="20">
+                    <Label name="host_group" width="300" />
+                    <Control height="1" padding="0,12,10,0" style="ct-bkhori" />
+                  </HorizontalLayout>
+                  <HorizontalLayout>
+                    <VerticalLayout width="180" padding="0,4,0,0" >
+                      <Label name="host_label" />
+                      <Label name="fqdn_label" />
+                      <Label name="desc_label" />
+                      <Label name="workgroup_label" />
+                    </VerticalLayout>
+                    <VerticalLayout padding="0,4,0,0">
+                      <Label name="host_text" />
+                      <Label name="fqdn_text" />
+                      <Label name="desc_text" />
+                      <Label name="workgroup_text" />
+                    </VerticalLayout>
+                  </HorizontalLayout>
+                </VerticalLayout>
+                <VerticalLayout height="60">
+                  <HorizontalLayout height="20">
+                    <Label name="status_group" width="150" />
+                    <Control height="1" padding="-15,12,10,0" style="ct-bkhori" />
+                  </HorizontalLayout>
+                  <HorizontalLayout>
+                     <VerticalLayout width="180" padding="0,4,0,0" >
+                      <Label name="runtime_label" />
+                    </VerticalLayout>
+                    <VerticalLayout padding="0,4,0,0" >
+                      <Label name="runtime_text" />
+                    </VerticalLayout>
+                  </HorizontalLayout>
+              </VerticalLayout>
+            </VerticalLayout>
+        </HorizontalLayout>
+    </VerticalLayout>
+  </VerticalLayout>
+</Window>

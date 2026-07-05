@@ -1,0 +1,10 @@
+{
+  "name":"UI_Shutdown",
+  "title":"%{Power}",
+  "nobaricon":true,
+  "baricon":"power.ico",
+  "style":0,
+  "exstyle":8,
+  "entry":"full.xml",
+  "lua":"full.lua"
+}

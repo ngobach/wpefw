@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Locale>
+	<Font id="16" size="16" name="Tahoma" shared="true" default="true"/>
+	<Font id="24" size="24" name="Tahoma" shared="true"/>
+
+	<!-- The description of <Style imagerectstyle="l,t,w,h" /> in main.xml -->
+	<!-- image's source, dest attributes will define with "left,top,width,height" style -->
+	<!-- the origin style is "left,top,right,bottom". -->
+	<!-- the xml file for "Include" tag is also use the same "imagerectstyle" -->
+
+	<MultiLanguage id="Power" value="Питание"/>
+	<MultiLanguage id="CloseComputer" value="Закрытие"/>
+	<MultiLanguage id="Shutdown" value="Выключение"/>
+	<MultiLanguage id="Restart" value="Перезагрузка"/>
+	<MultiLanguage id="Hibernate" value="Гибернация"/>
+	<MultiLanguage id="Standby" value="Режим ожидания"/>
+</Locale>

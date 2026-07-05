@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Locale>
+    <Font id="20" size="20" name="Segoe UI"  shared="true"  default="true" />
+    <Font id="30" size="30" name="Segoe UI"  shared="true" />
+
+<!-- The description of <Style imagerectstyle="l,t,w,h" /> in main.xml -->
+    <!-- image's source, dest attributes will define with "left,top,width,height" style -->
+    <!-- the origin style is "left,top,right,bottom". -->
+    <!-- the xml file for "Include" tag is also use the same "imagerectstyle" -->
+
+    <MultiLanguage id="Power" value="Güç" />
+    <MultiLanguage id="CloseComputer" value="PC'yi kapat" />
+    <MultiLanguage id="Shutdown" value="Kapat" />
+    <MultiLanguage id="Restart" value="Yeniden Başlat" />
+    <MultiLanguage id="Hibernate" value="Uyku" />
+    <MultiLanguage id="Standby" value="Hazırda Beklet" />
+</Locale>

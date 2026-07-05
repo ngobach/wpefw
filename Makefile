@@ -167,6 +167,12 @@ build/.winxshell.stamp:
 	rm -f build/winxshell/WinXShell/wallpaper.jpg
 	mv build/winxshell/WinXShell/WinXShell_x64.exe build/winxshell/WinXShell/WinXShell.exe
 	oras pull $(REGISTRY)/bootie/wallpaper:v3 -o build/winxshell/WinXShell/
+	for f in build/winxshell/WinXShell/wxsUI/*.zip; do \
+		[ -f "$$f" ] || continue; \
+		dir="$${f%.zip}"; \
+		unzip -o "$$f" -d "$$dir" 2>/dev/null; \
+		rm -f "$$f"; \
+	done
 	touch $@
 
 build/.explorerpp.stamp:

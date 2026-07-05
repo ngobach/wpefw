@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ColorTheme>
+    <Style name="ct-bd" bordersize="1" bordercolor="#FFFFFFFF" />
+    <Style name="ct-bk" bkcolor="#FFFFFFFF" />
+    <Style name="ct-nav" bkcolor="#FFFFFFFF" />
+    <Style name="ct-title" bkcolor="#FFF3F3F3" />
+    <Style name="ct-title-text" textcolor="#FF000000" />
+    <Style name="ct-bdtitle" bordercolor="#FFFFFFFF" />
+    <Style name="ct-sysbutton" textcolor="#FF8B8B8B" hottextcolor="#FFFFFFFF" />
+    <Style name="ct-txtinfo" textcolor="#FF003399" />
+    <Style name="ct-bkhori" bkcolor="#FFCCCCCC" />
+</ColorTheme>

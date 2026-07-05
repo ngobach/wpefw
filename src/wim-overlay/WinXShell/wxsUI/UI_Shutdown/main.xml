@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window size="320,300" caption="0,0,0,32" defaultfontcolor="#FFE8EAF6">
+
+    <Style imagerectstyle="l,t,w,h" />
+
+    <Style name="PowerBtn" value="height=&quot;40&quot; textcolor=&quot;#FFB0B0B0&quot; hottextcolor=&quot;#FFFFFFFF&quot; hotimage=&quot;color='#FF3D5AFE'&quot;" />
+    <VerticalLayout bkcolor="#FF1E1E1E">
+        <HorizontalLayout height="32" bkcolor="#FF252525">
+            <Label text="%{Power}" textpadding="5,0,0,0" />
+            <Control />
+            <Button name="::closebtn" bkimage="file='close.png'" width="16" height="16" padding="0,8,5,0" />
+        </HorizontalLayout>
+        <VerticalLayout height="150" bkcolor="#FF2D2D2D">
+            <HorizontalLayout height="48" padding="0,20,0,0">
+                <Control />
+                <Button normalimage="power.png" height="48" width="48" enabled="false" />
+                <Control />
+            </HorizontalLayout>
+            <Label text="%{CloseComputer}" font="24" align="center" textpadding="0,10,0,0" />
+        </VerticalLayout>
+        <VerticalLayout>
+            <Button padding="0,20,0,0" name="shutdownbtn" text="%{Shutdown}" style="PowerBtn" />
+            <Button name="restartbtn" text="%{Restart}" style="PowerBtn"/>
+            <Button visible="false" text="%{Hibernate}" style="PowerBtn" enabled="false" />
+            <Button visible="false" text="%{Standby}" style="PowerBtn" enabled="false" />
+        </VerticalLayout>
+    </VerticalLayout>
+</Window>

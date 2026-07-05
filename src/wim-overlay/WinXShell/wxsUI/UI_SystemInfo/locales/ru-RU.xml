@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Locale>
+    <Font id="12" size="12" name="Tahoma"  shared="true"  default="true" />
+    <Font id="14" size="14" name="Tahoma"  shared="true" />
+    <Font id="16" size="16" name="Tahoma"  shared="true" />
+    <Font shared="true" id="sym" size="12" name="Segoe MDL2 Assets" />
+</Locale>

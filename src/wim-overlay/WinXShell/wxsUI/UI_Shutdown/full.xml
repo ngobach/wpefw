@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window size="320,300" caption="0,0,0,32" defaultfontcolor="#FFE8EAF6">
+
+    <Style imagerectstyle="l,t,w,h" />
+
+    <Style name="PowerBtn" value="font=&quot;24&quot; textpadding=&quot;0,136,0,0&quot; width=&quot;128&quot; bkimage=&quot;file='$1B.png' dest='32,32,64,64'&quot; hotimage=&quot;file='$1.png' dest='32,32,64,64'&quot; textcolor=&quot;#FF000000&quot; hottextcolor=&quot;#FFFFFF&quot;" />
+    <!-- <VerticalLayout bkimage="file='bk.jpg' blur='20.0'"> -->
+    <VerticalLayout name="full_win" bkimage="file='blur.jpg' blur='0.0'">
+        <VerticalLayout>
+            <Control />
+                <HorizontalLayout height="180">
+                    <Control />
+                    <HorizontalLayout bkimage="file='cbtn128.png' fade='176' dest='0,0,128,128'" width="128">
+                        <Button name="restartbtn" text="%{Restart}" style="PowerBtn:reboot" />
+                    </HorizontalLayout>
+                        <Control width="50" />
+                    <HorizontalLayout bkimage="file='cbtn128.png' fade='176' dest='0,0,128,128'" width="128">
+                        <Button name="shutdownbtn" text="%{Shutdown}" style="PowerBtn:shutdown" />
+                    </HorizontalLayout>
+                    <Control />
+                </HorizontalLayout>
+            <Control />
+        </VerticalLayout>
+    </VerticalLayout>
+</Window>

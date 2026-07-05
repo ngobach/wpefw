@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ColorTheme>
+    <Default name="Label" textcolor="#FFFFFFFF" />
+    <Default name="Button" textcolor="#FFFFFFFF" />
+    <Style name="ct-bd" bordersize="1" bordercolor="#FF202020" />
+    <Style name="ct-bk" bkcolor="#FF191919" />
+    <Style name="ct-nav" bkcolor="#FF202020" />
+    <Style name="ct-title" bkcolor="#FF202020" />
+    <Style name="ct-bdtitle" bordercolor="#FF202020" />
+    <Style name="ct-sysbutton" textcolor="#FF8B8B8B" hottextcolor="#FFFFFFFF" />
+    <Style name="ct-txtinfo" textcolor="#FF0078D7" />
+    <Style name="ct-bkhori" bkcolor="#FF5E5D5C" />
+</ColorTheme>

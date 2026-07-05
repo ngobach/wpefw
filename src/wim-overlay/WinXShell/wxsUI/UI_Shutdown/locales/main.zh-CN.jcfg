@@ -1,0 +1,20 @@
+{
+  "说明" : {
+    "name":"字符串。指定UI名。必须参数。",
+    "title":"字符串。指定窗口名(任务栏显示名称)，可指定本地化资源ID，可缺省(<name>)。",
+    "entry":"字符串。指定入口文件。可缺省(main.xml)。",
+    "singleton":"布尔值。表明窗口是否唯一，如果为true，当该类型窗口存在时激活该窗口而不是创建新窗口，多用于设置窗口。可缺省(false)。",
+    "noshadow":"布尔值。表明窗口是否禁用阴影效果(Shadow.png)，可缺省(true)。",
+    "position":"固定字符串(center - 屏幕中央|rightbottom - 桌面右下角)。窗口的启动位置。可缺省(center)。",
+    "nobaricon":"布尔值。表明是否在任务栏显示图标。可缺省(false)。",
+    "baricon":"字符串。任务栏图标资源。可缺省(main.ico)。",
+    "customstyle":"布尔值。表明是否指定窗口风格。可缺省(false)。",
+    "style":"长整数值。指定窗口风格，具体值请参考微软说明文档。可缺省(WS_OVERLAPPEDWINDOW)。",
+    "exstyle":"长整数值。指定窗口扩展风格，具体值请参考微软说明文档。可缺省(WS_EX_WINDOWEDGE)。",
+    "theme":"字符串。指定主题(themes\*.xml)。可缺省(default)。",
+    "locale":"字符串。指定用于界面文字显示的本地语言资源。例如:zh-CN，en-US。可缺省(系统默认语言)。"
+  },
+  "name":"UI_Shutdown",
+  "title":"%{Power}",
+  "baricon":"power.ico"
+}

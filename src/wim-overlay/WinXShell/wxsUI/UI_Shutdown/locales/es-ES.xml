@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Locale>
+    <Font id="16" size="16" name="Segoe UI"  shared="true"  default="true" />
+    <Font id="24" size="24" name="Segoe UI"  shared="true" />
+
+    <MultiLanguage id="Power" value="Apagar" />
+    <MultiLanguage id="CloseComputer" value="Cerrar Ordenador" />
+    <MultiLanguage id="Shutdown" value="Apagar" />
+    <MultiLanguage id="Restart" value="Reiniciar" />
+    <MultiLanguage id="Hibernate" value="Hibernar" />
+    <MultiLanguage id="Standby" value="Suspender" />
+</Locale>

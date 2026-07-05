@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Locale>
+    <Font shared="true" id="16" size="16" name="微软雅黑" default="true" />
+    <Font shared="true" id="24" size="24" name="微软雅黑" />
+
+<!-- 以下是关于main.xml中的 <Style imagerectstyle="l,t,w,h" />语句的说明 -->
+    <!-- 设置图像中的source、dest定义采用left,top,width,height风格 -->
+    <!-- (原风格为left,top,right,bottom，需要额外计算，不方便应用风格定义) -->
+    <!-- include的xml定义文件需要使用相同的imagerectstyle -->
+
+    <MultiLanguage id="Power" value="电源" />
+    <MultiLanguage id="CloseComputer" value="关闭计算机" />
+    <MultiLanguage id="Shutdown" value="关机" />
+    <MultiLanguage id="Restart" value="重启" />
+    <MultiLanguage id="Hibernate" value="休眠" />
+    <MultiLanguage id="Standby" value="待机" />
+</Locale>

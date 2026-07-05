@@ -149,4 +149,12 @@ Windows Registry Editor Version 5.00
 "CommonW6432Dir"="X:\\Program Files\\Common Files"
 "ProgramW6432Dir"="X:\\Program Files"
 
+; Fix ShellLink CLSID paths pointing to non-existent $windows.~bt
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\{00021401-0000-0000-C000-000000000046}\InProcServer32]
+@="X:\\Windows\\System32\\windows.storage.dll"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Wow6432Node\CLSID\{00021401-0000-0000-C000-000000000046}\InProcServer32]
+@="X:\\Windows\\System32\\windows.storage.dll"
+
+
 

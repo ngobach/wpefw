@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window size="300,432" caption="0,0,0,0">
+    <Font shared="true" id="title_font" size="18" name="Segoe UI" bold="true" />
+    <Font shared="true" id="icon_font" size="18" name="Segoe MDL2 Assets" />
+    <Font shared="true" id="item_font" size="14" name="Segoe UI" />
+
+    <Style name="menu_item" height="42" align="left" textpadding="56,0,0,0" textcolor="#FFFFFFFF" hottextcolor="#FF3296FA" borderround="4,4" />
+    <Style name="power_btn" width="44" height="44" font="icon_font" textcolor="#FFFFFFFF" hottextcolor="#FFFFFFFF" hotimage="color='#FFE81123'" borderround="4,4" />
+    <Style name="settings_btn" width="44" height="44" font="icon_font" textcolor="#FFFFFFFF" hottextcolor="#FFFFFFFF" hotimage="color='#FF0078D7'" borderround="4,4" />
+
+    <VerticalLayout bkcolor="#FF1F1F1F" bordersize="1" bordercolor="#FF3E3E3E" borderround="6,6">
+        <!-- User Profile Area -->
+        <HorizontalLayout height="70" bkcolor="#FF2D2D2D">
+            <Label bkimage="file='ADMIN_logo.png' dest='0,0,40,40'" width="40" height="40" borderround="20,20" padding="15,15,0,0" />
+            <Label text="Administrator" font="title_font" textcolor="#FFFFFFFF" height="40" padding="12,15,0,0" />
+        </HorizontalLayout>
+
+        <!-- Divider -->
+        <Control height="1" bkcolor="#FF3E3E3E" />
+
+        <!-- Programs List -->
+        <VerticalLayout padding="12,4,12,4" height="180">
+            <Button name="cmd_item" text="Command Prompt" style="menu_item" bkimage="file='X:\Windows\System32\cmd.exe,0' dest='12,5,44,37'" />
+            <Control height="4" />
+            <Button name="notepad_item" text="Notepad" style="menu_item" bkimage="file='X:\Windows\notepad.exe,0' dest='12,5,44,37'" />
+            <Control height="4" />
+            <Button name="explorer_item" text="File Explorer" style="menu_item" bkimage="file='X:\Windows\explorer.exe,0' dest='12,5,44,37'" />
+            <Control height="4" />
+            <Button name="taskmgr_item" text="Task Manager" style="menu_item" bkimage="file='X:\Windows\System32\taskmgr.exe,0' dest='12,5,44,37'" />
+        </VerticalLayout>
+
+        <!-- Stretchable Spacer to absorb remaining window height -->
+        <Control />
+
+        <!-- Divider -->
+        <Control height="1" bkcolor="#FF3E3E3E" />
+
+        <!-- Bottom Action Bar -->
+        <HorizontalLayout height="56" bkcolor="#FF2D2D2D">
+            <Control />
+            <Button name="settings_btn" text="" style="settings_btn" padding="0,6,0,0" />
+            <Control width="8" />
+            <Button name="power_btn" text="" style="power_btn" padding="0,6,12,0" />
+        </HorizontalLayout>
+    </VerticalLayout>
+</Window>

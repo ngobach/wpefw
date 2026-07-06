@@ -71,7 +71,7 @@
     "start_pushed_bkcolor": [0, 100, 180],
     "start_icon_comment": "theme;empty;custom",
     "start_icon": "theme",
-    "start_command": "",
+    "start_command": "StartButton:onClick",
     "notopitems": true,
     "noprograms": false,
     "nosettings": true,

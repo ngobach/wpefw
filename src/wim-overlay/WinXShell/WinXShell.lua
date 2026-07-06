@@ -37,3 +37,7 @@ end
 function Startmenu:Shutdown()
   wxsUI('UI_Shutdown')
 end
+
+function StartButton:onClick()
+  wxsUI('UI_StartMenu')
+end

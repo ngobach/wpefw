@@ -1,0 +1,14 @@
+{
+  "name": "UI_StartMenu",
+  "title": "Start Menu",
+  "entry": "main.xml",
+  "lua": "main.lua",
+  "singleton": true,
+  "nobaricon": true,
+  "position": "leftbottom",
+  "customstyle": true,
+  "style": 2147483648,
+  "exstyle": 264,
+  "OnEscKey": "hide",
+  "OnDeactive": "hide"
+}

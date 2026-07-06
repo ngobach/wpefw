@@ -5,6 +5,9 @@ local last_snapshot = ""
 local btn_counter = 0
 local initialized = false
 
+require 'winapi'
+winapi.set_encoding(winapi.CP_UTF8)
+
 local function get_shortcuts()
   local shortcuts = {}
 
@@ -14,16 +17,16 @@ local function get_shortcuts()
     user_programs = appdata .. [[\Microsoft\Windows\Start Menu\Programs]]
   end
 
+  -- Use winapi.execute (hidden CreateProcess) instead of io.popen
+  -- to avoid flashing CMD windows on screen
   local cmd = string.format('dir /s /b "%s\\*.lnk" 2>nul', user_programs)
-  local handle = io.popen(cmd)
-  if handle then
-    for line in handle:lines() do
-      line = line:gsub("\r$", "")
+  local ret, text = winapi.execute(cmd, 'ansi')
+  if ret == 0 and text then
+    for line in text:gmatch('[^\r\n]+') do
       if line ~= "" then
         table.insert(shortcuts, line)
       end
     end
-    handle:close()
   end
 
   -- Sort alphabetically by base name

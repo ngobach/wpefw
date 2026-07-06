@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Window size="300,432" caption="0,0,0,0">
+<Window size="300,480" caption="0,0,0,0">
     <Font shared="true" id="title_font" size="18" name="Segoe UI" bold="true" />
     <Font shared="true" id="icon_font" size="18" name="Segoe MDL2 Assets" />
     <Font shared="true" id="item_font" size="14" name="Segoe UI" />
@@ -19,18 +19,8 @@
         <Control height="1" bkcolor="#FF3E3E3E" />
 
         <!-- Programs List -->
-        <VerticalLayout padding="12,4,12,4" height="180">
-            <Button name="cmd_item" text="Command Prompt" style="menu_item" bkimage="file='X:\Windows\System32\cmd.exe,0' dest='12,5,44,37'" />
-            <Control height="4" />
-            <Button name="notepad_item" text="Notepad" style="menu_item" bkimage="file='X:\Windows\notepad.exe,0' dest='12,5,44,37'" />
-            <Control height="4" />
-            <Button name="explorer_item" text="File Explorer" style="menu_item" bkimage="file='X:\Windows\explorer.exe,0' dest='12,5,44,37'" />
-            <Control height="4" />
-            <Button name="taskmgr_item" text="Task Manager" style="menu_item" bkimage="file='X:\Windows\System32\taskmgr.exe,0' dest='12,5,44,37'" />
+        <VerticalLayout name="programs_list" padding="12,4,12,4" height="344" vscrollbar="true">
         </VerticalLayout>
-
-        <!-- Stretchable Spacer to absorb remaining window height -->
-        <Control />
 
         <!-- Divider -->
         <Control height="1" bkcolor="#FF3E3E3E" />

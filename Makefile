@@ -23,6 +23,9 @@ APPS_SIZE  := 64
 APPS      := $(patsubst $(APPS_SRC)/%/,%,$(wildcard $(APPS_SRC)/*/))
 APP_WIMS  := $(addprefix $(APPS_BUILD)/pkgs/,$(addsuffix .wim,$(APPS)))
 
+PROGRAMS_SRC   := src
+PROGRAMS_BUILD := build/programs
+
 WIM_BINS     := wimappend wiminfo
 WIM_PATHS    := $(foreach bin,$(WIM_BINS),$(shell command -v $(bin) 2>/dev/null))
 
@@ -33,6 +36,7 @@ help:
 	@echo "Targets:"
 	@echo "  all        Build the WinPE WIM (default)"
 	@echo "  build      Build the WinPE WIM"
+	@echo "  programs   Build Windows C programs"
 	@echo "  run        Boot the WinPE WIM in QEMU"
 	@echo "  clean      Remove build artifacts"
 	@echo "  verify     List contents of app WIM files"
@@ -225,6 +229,29 @@ build/.windlls.stamp:
 	oras pull $(WIN_DLLS_OCI) -o build/windlls
 	touch $@
 
+PROGRAMS := gui-demo tray-app
+
+.PHONY: programs
+programs: $(PROGRAMS_BUILD)/gui-demo.exe $(PROGRAMS_BUILD)/tray.exe
+
+$(PROGRAMS_BUILD)/gui-demo.exe: $(PROGRAMS_SRC)/gui-demo/main.c
+	mkdir -p $(PROGRAMS_BUILD)
+	$(MAKE) -C $(PROGRAMS_SRC)/gui-demo all
+	cp $(PROGRAMS_SRC)/gui-demo/gui-demo.exe $@
+
+$(PROGRAMS_BUILD)/tray.exe: $(PROGRAMS_SRC)/tray-app/main.c
+	mkdir -p $(PROGRAMS_BUILD)
+	$(MAKE) -C $(PROGRAMS_SRC)/tray-app all
+	cp $(PROGRAMS_SRC)/tray-app/tray.exe $@
+
+.PHONY: push-programs
+push-programs: programs
+	@for exe in $(PROGRAMS_BUILD)/*.exe; do \
+		name=$$(basename "$$exe"); \
+		echo "Pushing $$name..."; \
+		python3 scripts/exec.py write_file "X:\\$$name" "$$exe"; \
+	done
+
 FORCE:
 $(APPS_BUILD)/pkgs/%.wim: FORCE
 	mkdir -p $(APPS_BUILD)/pkgs
@@ -294,3 +321,5 @@ deploy: sandbox-build
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
+	$(MAKE) -C $(PROGRAMS_SRC)/gui-demo clean 2>/dev/null || true
+	$(MAKE) -C $(PROGRAMS_SRC)/tray-app clean 2>/dev/null || true

@@ -378,14 +378,14 @@ static void RenderScene(double openE) {
         }
 
         /* bottom bar */
-        FillRound(hdc, 0, bottomTop + dy, g_w, BOTTOM_H, 0, RGB(16, 16, 20));
+        FillRoundPartialAA(g_bits, g_w, g_h, 1, bottomTop + dy, g_w - 2, BOTTOM_H - 1, RAD - 1, RGB(16, 16, 20), 0, 1);
         
         /* bottom bar divider line */
         {
             HPEN hPen = CreatePen(PS_SOLID, 1, RGB(45, 45, 52));
             HPEN hOld = SelectObject(hdc, hPen);
-            MoveToEx(hdc, 0, bottomTop + dy, NULL);
-            LineTo(hdc, g_w, bottomTop + dy);
+            MoveToEx(hdc, 1, bottomTop + dy, NULL);
+            LineTo(hdc, g_w - 1, bottomTop + dy);
             SelectObject(hdc, hOld);
             DeleteObject(hPen);
         }
@@ -472,6 +472,12 @@ static void RenderScene(double openE) {
         for (int x = 0; x < g_w; x++) {
             int in_panel = 1;
             if (y < RAD) {
+                if (x < RAD || x >= g_w - RAD) {
+                    if (!(b[0] | b[1] | b[2])) {
+                        in_panel = 0;
+                    }
+                }
+            } else if (y >= g_h - RAD) {
                 if (x < RAD || x >= g_w - RAD) {
                     if (!(b[0] | b[1] | b[2])) {
                         in_panel = 0;
@@ -793,9 +799,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             }
             RECT wa;
             SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
-            g_winX = wa.left;
-            g_winY = wa.bottom - g_h;
-            if (g_winY < wa.top) g_winY = wa.top;
+            g_winX = wa.left + 12;
+            g_winY = wa.bottom - g_h - 12;
             g_openStart = GetTickCount();
             g_closing = 0;
             g_flyout = 0;
@@ -848,7 +853,10 @@ static void BuildPanel(void) {
     bmi.bmiHeader.biCompression = BI_RGB;
     g_panelBmp = CreateDIBSection(g_panelDC, &bmi, DIB_RGB_COLORS, &g_panelBits, NULL, 0);
     SelectObject(g_panelDC, g_panelBmp);
-    FillRoundGradTopAA(g_panelBits, g_w, g_h, 0, 0, g_w, g_h, RAD, RGB(34, 34, 40), RGB(22, 22, 27));
+    /* Draw 1px Fluent border first */
+    FillRoundAA(g_panelBits, g_w, g_h, 0, 0, g_w, g_h, RAD, RGB(55, 55, 62));
+    /* Draw main rounded gradient panel inside, inset by 1px */
+    FillRoundGradAA(g_panelBits, g_w, g_h, 1, 1, g_w - 2, g_h - 2, RAD - 1, RGB(32, 32, 38), RGB(20, 20, 25));
 }
 
 /* ---------------------------------------------------------------- */
@@ -878,9 +886,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
     int sy = GetSystemMetrics(SM_CYSCREEN);
     RECT wa = {0, 0, sx, sy};
     SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
-    g_winX = wa.left;
-    g_winY = wa.bottom - g_h;
-    if (g_winY < wa.top) g_winY = wa.top;
+    g_winX = wa.left + 12;
+    g_winY = wa.bottom - g_h - 12;
 
     /* surface */
     g_hdc = CreateCompatibleDC(NULL);

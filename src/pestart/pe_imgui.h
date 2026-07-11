@@ -54,6 +54,7 @@ void FillRoundAA(void *bits, int bw, int bh, int x, int y, int w, int h, int r, 
 void FillRoundGrad(HDC hdc, int x, int y, int w, int h, int r, COLORREF c0, COLORREF c1);
 void FillRoundGradTop(HDC hdc, int x, int y, int w, int h, int r, COLORREF c0, COLORREF c1);
 void FillRoundGradTopAA(void *bits, int bw, int bh, int x, int y, int w, int h, int r, COLORREF c0, COLORREF c1);
+void FillRoundGradAA(void *bits, int bw, int bh, int x, int y, int w, int h, int r, COLORREF c0, COLORREF c1);
 void FillRoundPartialAA(void *bits, int bw, int bh, int x, int y, int w, int h, int r, COLORREF col, int roundTop, int roundBottom);
 void DrawTextC(HDC hdc, const char *s, RECT r, UINT fmt, HFONT f, COLORREF c);
 void DrawWinLogo(HDC hdc, int x, int y, int s, COLORREF col);
@@ -244,6 +245,58 @@ void FillRoundGradTopAA(void *bits, int bw, int bh, int x, int y, int w, int h, 
     }
 }
 
+void FillRoundGradAA(void *bits, int bw, int bh, int x, int y, int w, int h, int r, COLORREF c0, COLORREF c1) {
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > bw) w = bw - x;
+    if (y + h > bh) h = bh - y;
+    if (w <= 0 || h <= 0) return;
+
+    unsigned int *pixels = (unsigned int *)bits;
+
+    for (int py = y; py < y + h; py++) {
+        double t = (double)(py - y) / (double)h;
+        int rr = (int)(GetRValue(c0) + (GetRValue(c1) - GetRValue(c0)) * t);
+        int gg = (int)(GetGValue(c0) + (GetGValue(c1) - GetGValue(c0)) * t);
+        int bb = (int)(GetBValue(c0) + (GetBValue(c1) - GetBValue(c0)) * t);
+
+        unsigned int *row = pixels + py * bw;
+        int qy = (py < y + r) ? (y + r - py) : ((py >= y + h - r) ? (py - (y + h - r) + 1) : 0);
+        
+        for (int px = x; px < x + w; px++) {
+            int qx = (px < x + r) ? (x + r - px) : ((px >= x + w - r) ? (px - (x + w - r) + 1) : 0);
+            
+            double opacity = 1.0;
+            if (qx > 0 && qy > 0) {
+                double dist = sqrt((qx - 0.5) * (qx - 0.5) + (qy - 0.5) * (qy - 0.5));
+                if (dist > r + 0.5) {
+                    opacity = 0.0;
+                } else if (dist > r - 0.5) {
+                    opacity = (r + 0.5 - dist);
+                }
+            }
+            
+            if (opacity > 0.0) {
+                unsigned int *pixel = row + px;
+                if (opacity >= 0.99) {
+                    *pixel = bb | (gg << 8) | (rr << 16);
+                } else {
+                    unsigned int bgPixel = *pixel;
+                    unsigned char b_orig = bgPixel & 0xFF;
+                    unsigned char g_orig = (bgPixel >> 8) & 0xFF;
+                    unsigned char r_orig = (bgPixel >> 16) & 0xFF;
+                    
+                    unsigned char b_new = (unsigned char)(b_orig + (bb - b_orig) * opacity);
+                    unsigned char g_new = (unsigned char)(g_orig + (gg - g_orig) * opacity);
+                    unsigned char r_new = (unsigned char)(r_orig + (rr - r_orig) * opacity);
+                    
+                    *pixel = b_new | (g_new << 8) | (r_new << 16);
+                }
+            }
+        }
+    }
+}
+
 void FillRoundPartialAA(void *bits, int bw, int bh, int x, int y, int w, int h, int r, COLORREF col, int roundTop, int roundBottom) {
     if (x < 0) { w += x; x = 0; }
     if (y < 0) { h += y; y = 0; }
@@ -369,7 +422,7 @@ int UI_ListItem(unsigned int id, RECT r, const char *name, HICON hIcon) {
     int x = drawR.left, y = drawR.top, w = drawR.right - drawR.left, h = drawR.bottom - drawR.top;
     if (hover > 0.01) {
         FillRoundAA(g_bits, g_w, g_h, x + 2, y + 2, w - 4, h - 4, 6,
-                    Mix(RGB(40, 40, 46), RGB(70, 70, 82), hover));
+                    Mix(RGB(28, 28, 33), RGB(48, 48, 56), hover));
     }
     if (hIcon) {
         DrawIconEx(g_ui.hdc, x + 8, y + (h - 32) / 2, hIcon, 32, 32, 0, NULL, DI_NORMAL);
@@ -401,13 +454,14 @@ int UI_Tile(unsigned int id, RECT r, const char *name, HICON hIcon, COLORREF bas
     double hover = UI_HoverAnimation(id, g_ui.hot == id);
 
     int x = drawR.left, y = drawR.top, w = drawR.right - drawR.left, h = drawR.bottom - drawR.top;
-    COLORREF hot = Mix(baseColor, RGB(255, 255, 255), 0.18);
-    FillRoundAA(g_bits, g_w, g_h, x, y, w, h, 8, Mix(baseColor, hot, hover));
-    if (hIcon) {
-        DrawIconEx(g_ui.hdc, x + 10, y + 10, hIcon, 32, 32, 0, NULL, DI_NORMAL);
+    if (hover > 0.01) {
+        FillRoundAA(g_bits, g_w, g_h, x, y, w, h, 8, Mix(RGB(28, 28, 33), RGB(48, 48, 56), hover));
     }
-    RECT tr = { x + 8, y + h - 24, x + w - 8, y + h - 6 };
-    DrawTextC(g_ui.hdc, name, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE, g_fTile, RGB(255, 255, 255));
+    if (hIcon) {
+        DrawIconEx(g_ui.hdc, x + (w - 32) / 2, y + 8, hIcon, 32, 32, 0, NULL, DI_NORMAL);
+    }
+    RECT tr = { x + 4, y + 44, x + w - 4, y + h - 4 };
+    DrawTextC(g_ui.hdc, name, tr, DT_CENTER | DT_VCENTER | DT_SINGLELINE, g_fTile, RGB(225, 225, 232));
 
     return clicked;
 }

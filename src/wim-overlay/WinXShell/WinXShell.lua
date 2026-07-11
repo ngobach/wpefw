@@ -39,5 +39,5 @@ function Startmenu:Shutdown()
 end
 
 function StartButton:onClick()
-  wxsUI('UI_StartMenu')
+  App:Run("pestart.exe")
 end

@@ -15,6 +15,7 @@ IMDISK_OCI     := $(REGISTRY)/bootie/imdisk:v1
 PENETWORK_OCI  := $(REGISTRY)/bootie/penetwork:v1
 E7ZIP_OCI      := $(REGISTRY)/bootie/e7zip:v1
 WIN_DLLS_OCI   := $(REGISTRY)/bootie/windlls:v1
+PESTART_OCI    := $(REGISTRY)/bootie/pestart:v1
 
 APPS_SRC   := src/apps
 APPS_BUILD := build/apps
@@ -83,10 +84,11 @@ check-deps:
 		echo "The apps drive will not be built."; \
 	fi
 
-$(BUILD_OVERLAY): $(SRC_OVERLAY) build/.ulua.stamp build/.winxshell.stamp build/.explorerpp.stamp build/.pecmd.stamp build/.imdisk.stamp build/.penetwork.stamp build/.e7zip.stamp build/.windlls.stamp
+$(BUILD_OVERLAY): $(SRC_OVERLAY) build/.ulua.stamp build/.winxshell.stamp build/.pestart.stamp build/.explorerpp.stamp build/.pecmd.stamp build/.imdisk.stamp build/.penetwork.stamp build/.e7zip.stamp build/.windlls.stamp
 	mkdir -p $(BUILD_OVERLAY)
 	cp -r build/ulua $(BUILD_OVERLAY)/
 	cp -r build/winxshell/WinXShell/. $(BUILD_OVERLAY)/WinXShell/
+	cp build/pestart/pestart.exe $(BUILD_OVERLAY)/Windows/System32/pestart.exe
 	mkdir -p "$(BUILD_OVERLAY)/Program Files/Explorer++"
 	cp -r build/explorerpp/. "$(BUILD_OVERLAY)/Program Files/Explorer++/"
 	mkdir -p $(BUILD_OVERLAY)/Windows/System32
@@ -229,10 +231,20 @@ build/.windlls.stamp:
 	oras pull $(WIN_DLLS_OCI) -o build/windlls
 	touch $@
 
-PROGRAMS := gui-demo tray-app
+build/.pestart.stamp:
+	rm -rf build/pestart
+	mkdir -p build/pestart
+	oras pull $(PESTART_OCI) -o build/pestart
+	touch $@
+
+.PHONY: push-pestart
+push-pestart: $(PROGRAMS_BUILD)/pestart.exe
+	cd $(PROGRAMS_BUILD) && oras push $(PESTART_OCI) pestart.exe:application/octet-stream
+
+PROGRAMS := gui-demo tray-app pestart
 
 .PHONY: programs
-programs: $(PROGRAMS_BUILD)/gui-demo.exe $(PROGRAMS_BUILD)/tray.exe
+programs: $(PROGRAMS_BUILD)/gui-demo.exe $(PROGRAMS_BUILD)/tray.exe $(PROGRAMS_BUILD)/pestart.exe
 
 $(PROGRAMS_BUILD)/gui-demo.exe: $(PROGRAMS_SRC)/gui-demo/main.c
 	mkdir -p $(PROGRAMS_BUILD)
@@ -243,6 +255,11 @@ $(PROGRAMS_BUILD)/tray.exe: $(PROGRAMS_SRC)/tray-app/main.c
 	mkdir -p $(PROGRAMS_BUILD)
 	$(MAKE) -C $(PROGRAMS_SRC)/tray-app all
 	cp $(PROGRAMS_SRC)/tray-app/build/tray.exe $@
+
+$(PROGRAMS_BUILD)/pestart.exe: $(PROGRAMS_SRC)/pestart/main.c
+	mkdir -p $(PROGRAMS_BUILD)
+	$(MAKE) -C $(PROGRAMS_SRC)/pestart all
+	cp $(PROGRAMS_SRC)/pestart/build/pestart.exe $@
 
 .PHONY: push-programs
 push-programs: programs
@@ -323,3 +340,4 @@ clean:
 	rm -rf $(BUILD_DIR)
 	$(MAKE) -C $(PROGRAMS_SRC)/gui-demo clean 2>/dev/null || true
 	$(MAKE) -C $(PROGRAMS_SRC)/tray-app clean 2>/dev/null || true
+	$(MAKE) -C $(PROGRAMS_SRC)/pestart clean 2>/dev/null || true

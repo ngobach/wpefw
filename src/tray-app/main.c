@@ -1,6 +1,4 @@
 #define WIN32_LEAN_AND_MEAN
-#define UNICODE
-#define _UNICODE
 #include <windows.h>
 #include <shellapi.h>
 #include <math.h>
@@ -346,8 +344,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
     RegisterClassExA(&wc);
 
     hWnd = CreateWindowExA(0, "GdiDemoClass", "GDI Stress Test",
-        WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
-        640, 480, NULL, NULL, hInstance, NULL);
+        (WS_OVERLAPPEDWINDOW & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)),
+        CW_USEDEFAULT, CW_USEDEFAULT, 640, 480,
+        NULL, NULL, hInstance, NULL);
 
     nid.cbSize = sizeof(nid);
     nid.hWnd = hWnd;

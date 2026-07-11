@@ -129,16 +129,8 @@ static int StrIStr(const char *hay, const char *ndl) {
 
 static char g_logPath[MAX_PATH] = {0};
 static int  g_logEnabled = 0;
-
 static void LogInit(void) {
-    char val[32] = {0};
-    GetEnvironmentVariableA("PESTART_LOG_ENABLED", val, sizeof(val));
-    if (lstrcmpiA(val, "1") == 0 || lstrcmpiA(val, "true") == 0) {
-        g_logEnabled = 1;
-    } else {
-        g_logEnabled = 0;
-        return;
-    }
+    g_logEnabled = 1;
 
     char drive[32] = {0};
     GetEnvironmentVariableA("SystemDrive", drive, sizeof(drive));
@@ -652,15 +644,29 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         return 0;
 
     case WM_ACTIVATE:
+        WriteLog("[WndProc] WM_ACTIVATE: wParam=%u, IsVisible=%d, now=%u\n",
+                 (unsigned int)wParam, IsWindowVisible(hwnd), GetTickCount());
         if (LOWORD(wParam) == WA_INACTIVE && !g_closing) {
             ShowWindow(hwnd, SW_HIDE);
+            SetPropA(hwnd, "LastHideTime", (HANDLE)(UINT_PTR)GetTickCount());
+            WriteLog("[WndProc] WM_ACTIVATE: Set LastHideTime=%u\n", GetTickCount());
         }
         return 0;
 
     case WM_PESTART_TOGGLE: {
+        DWORD now = GetTickCount();
+        WriteLog("[WndProc] WM_PESTART_TOGGLE: IsVisible=%d, now=%u\n",
+                 IsWindowVisible(hwnd), now);
         if (IsWindowVisible(hwnd)) {
             ShowWindow(hwnd, SW_HIDE);
+            SetPropA(hwnd, "LastHideTime", (HANDLE)(UINT_PTR)now);
+            WriteLog("[WndProc] WM_PESTART_TOGGLE: Set LastHideTime=%u\n", now);
         } else {
+            DWORD lastHide = (DWORD)(UINT_PTR)GetPropA(hwnd, "LastHideTime");
+            if (lastHide != 0 && now - lastHide < 500) {
+                WriteLog("[WndProc] WM_PESTART_TOGGLE: Debounced show request! diff=%u\n", now - lastHide);
+                return 0;
+            }
             RECT wa;
             SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
             g_winX = wa.left;
@@ -693,6 +699,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         return TRUE;
 
     case WM_DESTROY:
+        RemovePropA(hwnd, "LastHideTime");
         KillTimer(hwnd, 1);
         return 0;
     }

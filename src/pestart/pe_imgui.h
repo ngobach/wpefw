@@ -33,7 +33,7 @@ extern double g_hoverStates[1024];
 #endif
 
 /* External dependencies expected from the main application */
-extern HFONT g_fNorm, g_fBold, g_fSmall, g_fTitle, g_fTile, g_fMDL2;
+extern HFONT g_fNorm, g_fBold, g_fTitle, g_fTile, g_fMDL2;
 extern COLORREF g_accent;
 extern double g_scroll;
 extern double g_targetScroll;

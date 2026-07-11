@@ -43,7 +43,7 @@ static char    g_userName[64] = {0};
 COLORREF g_accent = RGB(0, 120, 215);
 
 /* fonts */
-HFONT g_fNorm, g_fBold, g_fSmall, g_fTitle, g_fTile, g_fMDL2;
+HFONT g_fNorm, g_fBold, g_fTitle, g_fTile, g_fMDL2;
 
 /* surface (layered) */
 static HDC    g_hdc = NULL;
@@ -109,31 +109,6 @@ static void AddItem(ItemType t, const char *name, const char *target, int tile) 
     it->hIcon = GetIcon(target, t == IT_FOLDER);
     it->tileColor = g_palette[g_nitems % (sizeof(g_palette)/sizeof(g_palette[0]))];
     g_nitems++;
-}
-
-static void AddDefaults(void) {
-    AddItem(IT_PROGRAM, "BootICE",    "X:\\apps\\bootice\\BOOTICE.exe",        1);
-    AddItem(IT_PROGRAM, "DiskGenius", "X:\\apps\\diskgenius\\DiskGenius.exe",  1);
-    AddItem(IT_PROGRAM, "Ghost",      "X:\\apps\\ghost\\GHOST.exe",            1);
-    AddItem(IT_PROGRAM, "HWiNFO",     "X:\\apps\\hwinfo\\HWiNFO.exe",          1);
-    AddItem(IT_PROGRAM, "WinNTSetup", "X:\\apps\\winntsetup\\WinNTSetup_x64.exe", 1);
-    AddItem(IT_FOLDER,  "System (X:)", "X:\\",           0);
-    AddItem(IT_FOLDER,  "Applications", "X:\\apps",      0);
-    AddItem(IT_FOLDER,  "Program Files", "X:\\Program Files", 0);
-
-    /* dummy entries for scroll testing */
-    static const char *dummy[] = {
-        "Notepad", "Calculator", "Paint", "Command Prompt", "Registry Editor",
-        "Task Manager", "File Explorer", "Control Panel", "Device Manager",
-        "Disk Management", "Event Viewer", "Services", "Group Policy",
-        "Resource Monitor", "Performance Monitor", "System Information",
-        "Remote Desktop", "Windows Terminal"
-    };
-    for (int i = 0; i < (int)(sizeof(dummy)/sizeof(dummy[0])); i++) {
-        char tgt[64];
-        wsprintfA(tgt, "X:\\apps\\dummy\\app%d.exe", i + 1);
-        AddItem(IT_PROGRAM, dummy[i], tgt, 0);
-    }
 }
 
 static int StrIStr(const char *hay, const char *ndl) {
@@ -269,63 +244,7 @@ static void ScanProgramsDir(const char *dirPath, int isPinnedFolder) {
     FindClose(hFind);
 }
 
-static void LoadConfig(void) {
-    char path[MAX_PATH_LEN];
-    FILE *f = NULL;
-    if (GetModuleFileNameA(NULL, path, MAX_PATH_LEN)) {
-        char *p = strrchr(path, '\\');
-        if (p) lstrcpyA(p + 1, "pestart.cfg");
-        else   lstrcpyA(path, "pestart.cfg");
-        f = fopen(path, "r");
-    }
 
-    if (f) {
-        char line[512];
-        while (fgets(line, sizeof(line), f)) {
-            int n = (int)strlen(line);
-            while (n > 0 && (line[n-1] == '\n' || line[n-1] == '\r')) line[--n] = 0;
-            if (n == 0 || line[0] == '#') continue;
-
-            char *bar = strchr(line, '|');
-            if (!bar) continue;
-            *bar = 0;
-            char *kind = line;
-            char *rest = bar + 1;
-
-            if (!strcmp(kind, "app") || !strcmp(kind, "tile")) {
-                char *b2 = strchr(rest, '|');
-                if (!b2) continue;
-                *b2 = 0;
-                AddItem(IT_PROGRAM, rest, b2 + 1, !strcmp(kind, "tile"));
-            } else if (!strcmp(kind, "folder")) {
-                char *b2 = strchr(rest, '|');
-                if (!b2) continue;
-                *b2 = 0;
-                AddItem(IT_FOLDER, rest, b2 + 1, 0);
-            } else if (!strcmp(kind, "name")) {
-                lstrcpynA(g_userName, rest, sizeof(g_userName));
-            } else if (!strcmp(kind, "accent")) {
-                int r = 0, g = 0, b = 0;
-                if (sscanf(rest, "%d,%d,%d", &r, &g, &b) == 3)
-                    g_accent = RGB((BYTE)r, (BYTE)g, (BYTE)b);
-            }
-        }
-        fclose(f);
-    }
-
-    int base_items = g_nitems;
-
-    /* Scan Start Menu directories */
-    char pathUser[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PROGRAMS, NULL, 0, pathUser))) {
-        ScanProgramsDir(pathUser, 0);
-    }
-
-    // Fall back to defaults (dummy apps + folders) if we still have no programs scanned
-    if (g_nitems == base_items) {
-        AddDefaults();
-    }
-}
 
 
 /* ---------------------------------------------------------------- */
@@ -778,7 +697,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
     LogInit();
     CoInitialize(NULL);
 
-    LoadConfig();
+    char pathUser[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PROGRAMS, NULL, 0, pathUser)))
+        ScanProgramsDir(pathUser, 0);
 
     lstrcpyA(g_userName, "Administrator");
 
@@ -807,7 +728,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
     /* fonts */
     g_fNorm  = CreateFontA(13, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe UI");
     g_fBold  = CreateFontA(13, 0, 0, 0, FW_BOLD,   FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe UI");
-    g_fSmall = CreateFontA(11, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe UI");
     g_fTitle = CreateFontA(16, 0, 0, 0, FW_BOLD,   FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe UI");
     g_fTile  = CreateFontA(12, 0, 0, 0, FW_BOLD,   FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe UI");
     g_fMDL2  = CreateFontA(20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe MDL2 Assets");
@@ -837,7 +757,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
 
     for (int i = 0; i < g_nitems; i++)
         if (g_items[i].hIcon) DestroyIcon(g_items[i].hIcon);
-    DeleteObject(g_fNorm); DeleteObject(g_fBold); DeleteObject(g_fSmall);
+    DeleteObject(g_fNorm); DeleteObject(g_fBold);
     DeleteObject(g_fTitle); DeleteObject(g_fTile); DeleteObject(g_fMDL2);
     DeleteObject(g_hBmp); DeleteObject(g_panelBmp);
     DeleteDC(g_hdc); DeleteDC(g_panelDC);

@@ -370,6 +370,10 @@ static void ComputeLayout(void) {
     /* bottom bar */
     g_userR  = (RECT){PAD, bottomTop + 8, PAD + 240, g_h - 8};
     g_powerR = (RECT){g_w - PAD - 44, bottomTop + 8, g_w - PAD, g_h - 8};
+    {
+        Hit hp = {g_powerR, HIT_POWER, -1};
+        if (g_nhits < 160) g_hits[g_nhits++] = hp;
+    }
 
     /* search hit */
     Hit hs = {g_searchR, HIT_SEARCH, -1};

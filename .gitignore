@@ -3,3 +3,5 @@
 scripts/__pycache__/
 /sandbox
 .DS_Store
+src/**/*.exe
+src/**/*.pdb

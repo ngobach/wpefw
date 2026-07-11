@@ -2,10 +2,9 @@
 #include <commctrl.h>
 #include "resource.h"
 
-#define RT_MANIFEST 24
 1 RT_MANIFEST "gui-demo.exe.manifest"
 
-IDD_GUIDIALOG DIALOGEX 0, 0, 300, 310
+IDD_GUIDIALOG DIALOGEX 0, 0, 300, 269
 STYLE DS_SETFONT | DS_SHELLFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN
 CAPTION "Win32 GUI Controls Demo"
 FONT 8, "MS Shell Dlg", 400, 0, 0x0409

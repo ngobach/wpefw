@@ -43,7 +43,7 @@ static INT_PTR CALLBACK DlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         SendMessage(hSlider, TBM_SETPOS, TRUE, 50);
         SendMessage(hSlider, TBM_SETTICFREQ, 10, 0);
         SendMessage(hProgress, PBM_SETRANGE, 0, MAKELONG(0, 100));
-        SendMessage(hProgress, PBM_SETPOS, 30, 0);
+        SendMessage(hProgress, PBM_SETPOS, 50, 0);
         SendMessage(hProgress, PBM_SETBARCOLOR, 0, RGB(0, 180, 0));
 
         SendMessage(hListBox, LB_ADDSTRING, 0, (LPARAM)"Apple");

@@ -1,6 +1,6 @@
 CC = zig cc -target x86_64-windows-gnu
 CFLAGS = -Os -Wall -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables
-LIBS = -lgdi32 -luser32 -lshell32 -lkernel32 -Wl,--gc-sections,--subsystem,windows -s
+LIBS = -lgdi32 -luser32 -lshell32 -lkernel32 -lole32 -Wl,--gc-sections,--subsystem,windows -s
 
 SRC = main.c
 OUT = build/pestart.exe

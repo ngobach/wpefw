@@ -1,9 +1,12 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <shellapi.h>
+#include <shlobj.h>
+#include <objbase.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 /* ---------------------------------------------------------------- */
 /*  pestart - a custom Windows 10 style start menu for Windows PE   */
@@ -148,50 +151,180 @@ static int StrIStr(const char *hay, const char *ndl) {
     return 0;
 }
 
+static char g_logPath[MAX_PATH] = {0};
+static int  g_logEnabled = 0;
+
+static void LogInit(void) {
+    char val[32] = {0};
+    GetEnvironmentVariableA("PESTART_LOG_ENABLED", val, sizeof(val));
+    if (lstrcmpiA(val, "1") == 0 || lstrcmpiA(val, "true") == 0) {
+        g_logEnabled = 1;
+    } else {
+        g_logEnabled = 0;
+        return;
+    }
+
+    char drive[32] = {0};
+    GetEnvironmentVariableA("SystemDrive", drive, sizeof(drive));
+    if (!drive[0]) lstrcpyA(drive, "X:");
+    wsprintfA(g_logPath, "%s\\pestart.log", drive);
+    
+    FILE *f = fopen(g_logPath, "w");
+    if (f) {
+        fprintf(f, "=== pestart log initialized ===\n");
+        fclose(f);
+    }
+}
+
+static void WriteLog(const char *fmt, ...) {
+    if (!g_logEnabled || !g_logPath[0]) return;
+    FILE *f = fopen(g_logPath, "a");
+    if (f) {
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(f, fmt, args);
+        va_end(args);
+        fclose(f);
+    }
+}
+
+static BOOL ResolveShortcut(const char *lnkPath, char *targetPath, HICON *phIcon) {
+    IShellLinkA *pLink = NULL;
+    IPersistFile *pPersist = NULL;
+    BOOL success = FALSE;
+
+    if (SUCCEEDED(CoCreateInstance(&CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, &IID_IShellLinkA, (void**)&pLink))) {
+        if (SUCCEEDED(pLink->lpVtbl->QueryInterface(pLink, &IID_IPersistFile, (void**)&pPersist))) {
+            wchar_t wPath[MAX_PATH];
+            MultiByteToWideChar(CP_ACP, 0, lnkPath, -1, wPath, MAX_PATH);
+
+            if (SUCCEEDED(pPersist->lpVtbl->Load(pPersist, wPath, STGM_READ))) {
+                if (SUCCEEDED(pLink->lpVtbl->Resolve(pLink, NULL, SLR_NO_UI))) {
+                    pLink->lpVtbl->GetPath(pLink, targetPath, MAX_PATH, NULL, 0);
+                    
+                    char iconPath[MAX_PATH] = {0};
+                    int iconIdx = 0;
+                    pLink->lpVtbl->GetIconLocation(pLink, iconPath, MAX_PATH, &iconIdx);
+
+                    if (phIcon) {
+                        *phIcon = NULL;
+                        if (iconPath[0]) {
+                            ExtractIconExA(iconPath, iconIdx, phIcon, NULL, 1);
+                        }
+                        if (!*phIcon && targetPath[0]) {
+                            ExtractIconExA(targetPath, 0, phIcon, NULL, 1);
+                        }
+                    }
+                    success = TRUE;
+                }
+            }
+            pPersist->lpVtbl->Release(pPersist);
+        }
+        pLink->lpVtbl->Release(pLink);
+    }
+    return success;
+}
+
+static void ScanProgramsDir(const char *dirPath, int isPinnedFolder) {
+    WriteLog("[SCAN] Directory: %s (isPinned=%d)\n", dirPath, isPinnedFolder);
+    char searchPath[MAX_PATH];
+    wsprintfA(searchPath, "%s\\*", dirPath);
+    
+    WIN32_FIND_DATAA fd;
+    HANDLE hFind = FindFirstFileA(searchPath, &fd);
+    if (hFind == INVALID_HANDLE_VALUE) return;
+    
+    do {
+        if (!strcmp(fd.cFileName, ".") || !strcmp(fd.cFileName, "..")) continue;
+        
+        char fullPath[MAX_PATH];
+        wsprintfA(fullPath, "%s\\%s", dirPath, fd.cFileName);
+        
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            int subIsPinned = isPinnedFolder || (lstrcmpiA(fd.cFileName, "Pinned") == 0);
+            ScanProgramsDir(fullPath, subIsPinned);
+        } else {
+            char *ext = strrchr(fd.cFileName, '.');
+            if (ext && lstrcmpiA(ext, ".lnk") == 0) {
+                char target[MAX_PATH] = {0};
+                HICON hIcon = NULL;
+                if (ResolveShortcut(fullPath, target, &hIcon)) {
+                    char name[64];
+                    int len = (int)(ext - fd.cFileName);
+                    if (len >= 64) len = 63;
+                    lstrcpynA(name, fd.cFileName, len + 1);
+                    
+                    WriteLog("[FOUND] %s -> %s (Pinned=%d)\n", name, target, isPinnedFolder);
+                    AddItem(IT_PROGRAM, name, target, isPinnedFolder);
+                    if (g_nitems > 0 && hIcon) {
+                        g_items[g_nitems - 1].hIcon = hIcon;
+                    }
+                } else {
+                    WriteLog("[FAILED] To resolve shortcut: %s\n", fullPath);
+                }
+            }
+        }
+    } while (FindNextFileA(hFind, &fd));
+    
+    FindClose(hFind);
+}
+
 static void LoadConfig(void) {
     char path[MAX_PATH_LEN];
-    if (!GetModuleFileNameA(NULL, path, MAX_PATH_LEN)) { AddDefaults(); return; }
-    char *p = strrchr(path, '\\');
-    if (p) lstrcpyA(p + 1, "pestart.cfg");
-    else   lstrcpyA(path, "pestart.cfg");
-
-    FILE *f = fopen(path, "r");
-    if (!f) { AddDefaults(); return; }
-
-    char line[512];
-    int haveApp = 0;
-    while (fgets(line, sizeof(line), f)) {
-        int n = (int)strlen(line);
-        while (n > 0 && (line[n-1] == '\n' || line[n-1] == '\r')) line[--n] = 0;
-        if (n == 0 || line[0] == '#') continue;
-
-        char *bar = strchr(line, '|');
-        if (!bar) continue;
-        *bar = 0;
-        char *kind = line;
-        char *rest = bar + 1;
-
-        if (!strcmp(kind, "app") || !strcmp(kind, "tile")) {
-            char *b2 = strchr(rest, '|');
-            if (!b2) continue;
-            *b2 = 0;
-            AddItem(IT_PROGRAM, rest, b2 + 1, !strcmp(kind, "tile"));
-            haveApp = 1;
-        } else if (!strcmp(kind, "folder")) {
-            char *b2 = strchr(rest, '|');
-            if (!b2) continue;
-            *b2 = 0;
-            AddItem(IT_FOLDER, rest, b2 + 1, 0);
-        } else if (!strcmp(kind, "name")) {
-            lstrcpynA(g_userName, rest, sizeof(g_userName));
-        } else if (!strcmp(kind, "accent")) {
-            int r = 0, g = 0, b = 0;
-            if (sscanf(rest, "%d,%d,%d", &r, &g, &b) == 3)
-                g_accent = RGB((BYTE)r, (BYTE)g, (BYTE)b);
-        }
+    FILE *f = NULL;
+    if (GetModuleFileNameA(NULL, path, MAX_PATH_LEN)) {
+        char *p = strrchr(path, '\\');
+        if (p) lstrcpyA(p + 1, "pestart.cfg");
+        else   lstrcpyA(path, "pestart.cfg");
+        f = fopen(path, "r");
     }
-    fclose(f);
-    if (!haveApp && g_nitems == 0) AddDefaults();
+
+    if (f) {
+        char line[512];
+        while (fgets(line, sizeof(line), f)) {
+            int n = (int)strlen(line);
+            while (n > 0 && (line[n-1] == '\n' || line[n-1] == '\r')) line[--n] = 0;
+            if (n == 0 || line[0] == '#') continue;
+
+            char *bar = strchr(line, '|');
+            if (!bar) continue;
+            *bar = 0;
+            char *kind = line;
+            char *rest = bar + 1;
+
+            if (!strcmp(kind, "app") || !strcmp(kind, "tile")) {
+                char *b2 = strchr(rest, '|');
+                if (!b2) continue;
+                *b2 = 0;
+                AddItem(IT_PROGRAM, rest, b2 + 1, !strcmp(kind, "tile"));
+            } else if (!strcmp(kind, "folder")) {
+                char *b2 = strchr(rest, '|');
+                if (!b2) continue;
+                *b2 = 0;
+                AddItem(IT_FOLDER, rest, b2 + 1, 0);
+            } else if (!strcmp(kind, "name")) {
+                lstrcpynA(g_userName, rest, sizeof(g_userName));
+            } else if (!strcmp(kind, "accent")) {
+                int r = 0, g = 0, b = 0;
+                if (sscanf(rest, "%d,%d,%d", &r, &g, &b) == 3)
+                    g_accent = RGB((BYTE)r, (BYTE)g, (BYTE)b);
+            }
+        }
+        fclose(f);
+    }
+
+    int base_items = g_nitems;
+
+    /* Scan Start Menu directories */
+    char pathUser[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PROGRAMS, NULL, 0, pathUser))) {
+        ScanProgramsDir(pathUser, 0);
+    }
+
+    // Fall back to defaults (dummy apps + folders) if we still have no programs scanned
+    if (g_nitems == base_items) {
+        AddDefaults();
+    }
 }
 
 
@@ -254,7 +387,7 @@ static void RenderScene(double openE) {
         }
 
         /* list items (clipped to area below the header) */
-        {
+        if (g_nfilt > 0) {
             HRGN cl = CreateRectRgn(PAD, listTop + dy, PAD + 270, bottomTop + dy);
             SelectClipRgn(hdc, cl);
             int startY = contentTop + HEADER_H - g_scroll;
@@ -269,6 +402,17 @@ static void RenderScene(double openE) {
             }
             SelectClipRgn(hdc, NULL);
             DeleteObject(cl);
+        } else {
+            /* Draw list empty state */
+            int cx = listX + leftW / 2;
+            int cy = listTop + 80 + dy;
+            DrawGlyph(hdc, 0xE721, cx, cy, RGB(90, 90, 100), g_fMDL2);
+            
+            RECT rTitle = { listX + 10, cy + 20, listX + leftW - 10, cy + 40 };
+            DrawTextC(hdc, "No apps found", rTitle, DT_CENTER | DT_SINGLELINE, g_fBold, RGB(160, 160, 170));
+            
+            RECT rSub = { listX + 20, cy + 42, listX + leftW - 20, cy + 100 };
+            DrawTextC(hdc, "Check spelling or search terms.", rSub, DT_CENTER | DT_WORDBREAK, g_fNorm, RGB(110, 110, 120));
         }
 
         /* tiles */
@@ -276,24 +420,52 @@ static void RenderScene(double openE) {
         DrawTextC(hdc, "Pinned", trh, DT_LEFT | DT_VCENTER | DT_SINGLELINE,
                   g_fBold, RGB(210, 210, 220));
 
-        int tileGap = 12, tileH = 74;
-        int tileW = (tilesW - tileGap) / 2;
-        int col = 0, row = 0, drawn = 0;
-        for (int i = 0; i < g_nitems && drawn < 8; i++) {
-            if (g_items[i].type != IT_PROGRAM || !g_items[i].tile) continue;
-            int tx = tilesX + col * (tileW + tileGap);
-            int ty = contentTop + HEADER_H + row * (tileH + tileGap);
-            if (ty + tileH > bottomTop) break;
-            RECT tileR = {tx, ty, tx + tileW, ty + tileH};
-            if (UI_Tile(200 + i, tileR, g_items[i].name, g_items[i].hIcon, g_items[i].tileColor)) {
-                LaunchItem(i);
+        int npinned = 0;
+        for (int i = 0; i < g_nitems; i++) {
+            if (g_items[i].type == IT_PROGRAM && g_items[i].tile) npinned++;
+        }
+
+        if (npinned > 0) {
+            int tileGap = 12, tileH = 74;
+            int tileW = (tilesW - tileGap) / 2;
+            int col = 0, row = 0, drawn = 0;
+            for (int i = 0; i < g_nitems && drawn < 8; i++) {
+                if (g_items[i].type != IT_PROGRAM || !g_items[i].tile) continue;
+                int tx = tilesX + col * (tileW + tileGap);
+                int ty = contentTop + HEADER_H + row * (tileH + tileGap);
+                if (ty + tileH > bottomTop) break;
+                RECT tileR = {tx, ty, tx + tileW, ty + tileH};
+                if (UI_Tile(200 + i, tileR, g_items[i].name, g_items[i].hIcon, g_items[i].tileColor)) {
+                    LaunchItem(i);
+                }
+                col++; if (col == 2) { col = 0; row++; }
+                drawn++;
             }
-            col++; if (col == 2) { col = 0; row++; }
-            drawn++;
+        } else {
+            /* Draw tiles empty state */
+            int cx = tilesX + tilesW / 2;
+            int cy = listTop + 80 + dy;
+            DrawGlyph(hdc, 0xE718, cx, cy, RGB(90, 90, 100), g_fMDL2);
+            
+            RECT rTitle = { tilesX + 10, cy + 20, tilesX + tilesW - 10, cy + 40 };
+            DrawTextC(hdc, "No pinned apps", rTitle, DT_CENTER | DT_SINGLELINE, g_fBold, RGB(160, 160, 170));
+            
+            RECT rSub = { tilesX + 20, cy + 42, tilesX + tilesW - 20, cy + 120 };
+            DrawTextC(hdc, "Put shortcuts in the Programs\\Pinned folder to pin them here.", rSub, DT_CENTER | DT_WORDBREAK, g_fNorm, RGB(110, 110, 120));
         }
 
         /* bottom bar */
-        FillRound(hdc, 0, bottomTop + dy, g_w, BOTTOM_H, 0, RGB(26, 26, 31));
+        FillRound(hdc, 0, bottomTop + dy, g_w, BOTTOM_H, 0, RGB(16, 16, 20));
+        
+        /* bottom bar divider line */
+        {
+            HPEN hPen = CreatePen(PS_SOLID, 1, RGB(45, 45, 52));
+            HPEN hOld = SelectObject(hdc, hPen);
+            MoveToEx(hdc, 0, bottomTop + dy, NULL);
+            LineTo(hdc, g_w, bottomTop + dy);
+            SelectObject(hdc, hOld);
+            DeleteObject(hPen);
+        }
         
         /* user */
         RECT userR = {PAD, bottomTop + 8, PAD + 240, g_h - 8};
@@ -354,7 +526,7 @@ static void RenderScene(double openE) {
         /* flyout */
         if (g_flyoutAnim > 0.01) {
             int fw = 240, fh = 120;
-            int fy0 = powerR.top - 8 - fh - g_flyoutDy;
+            int fy0 = powerR.top - 16 - fh - g_flyoutDy;
             RECT flyoutR = {powerR.right - fw, fy0, powerR.right, fy0 + fh};
             int fx = flyoutR.left, fy = flyoutR.top, midY = fy + fh / 2;
             
@@ -601,6 +773,8 @@ static void BuildPanel(void) {
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow) {
     (void)hPrev; (void)lpCmd; (void)nShow;
+    LogInit();
+    CoInitialize(NULL);
 
     LoadConfig();
 
@@ -665,5 +839,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
     DeleteObject(g_fTitle); DeleteObject(g_fTile); DeleteObject(g_fMDL2);
     DeleteObject(g_hBmp); DeleteObject(g_panelBmp);
     DeleteDC(g_hdc); DeleteDC(g_panelDC);
+    CoUninitialize();
     return (int)msg.wParam;
 }

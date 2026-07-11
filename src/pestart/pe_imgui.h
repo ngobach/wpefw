@@ -49,6 +49,7 @@ void FillRoundAA(void *bits, int bw, int bh, int x, int y, int w, int h, int r, 
 void FillRoundGrad(HDC hdc, int x, int y, int w, int h, int r, COLORREF c0, COLORREF c1);
 void FillRoundGradTop(HDC hdc, int x, int y, int w, int h, int r, COLORREF c0, COLORREF c1);
 void FillRoundGradTopAA(void *bits, int bw, int bh, int x, int y, int w, int h, int r, COLORREF c0, COLORREF c1);
+void FillRoundPartialAA(void *bits, int bw, int bh, int x, int y, int w, int h, int r, COLORREF col, int roundTop, int roundBottom);
 void DrawTextC(HDC hdc, const char *s, RECT r, UINT fmt, HFONT f, COLORREF c);
 void DrawWinLogo(HDC hdc, int x, int y, int s, COLORREF col);
 void DrawGlyph(HDC hdc, unsigned int cp, int cx, int cy, COLORREF col, HFONT f);
@@ -238,6 +239,62 @@ void FillRoundGradTopAA(void *bits, int bw, int bh, int x, int y, int w, int h, 
     }
 }
 
+void FillRoundPartialAA(void *bits, int bw, int bh, int x, int y, int w, int h, int r, COLORREF col, int roundTop, int roundBottom) {
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > bw) w = bw - x;
+    if (y + h > bh) h = bh - y;
+    if (w <= 0 || h <= 0) return;
+
+    unsigned int *pixels = (unsigned int *)bits;
+    int rr = GetRValue(col);
+    int gg = GetGValue(col);
+    int bb = GetBValue(col);
+
+    for (int py = y; py < y + h; py++) {
+        unsigned int *row = pixels + py * bw;
+        
+        int qy = 0;
+        if (roundTop && py < y + r) {
+            qy = y + r - py;
+        } else if (roundBottom && py >= y + h - r) {
+            qy = py - (y + h - r) + 1;
+        }
+        
+        for (int px = x; px < x + w; px++) {
+            int qx = (px < x + r) ? (x + r - px) : ((px >= x + w - r) ? (px - (x + w - r) + 1) : 0);
+            
+            double opacity = 1.0;
+            if (qx > 0 && qy > 0) {
+                double dist = sqrt((qx - 0.5) * (qx - 0.5) + (qy - 0.5) * (qy - 0.5));
+                if (dist > r + 0.5) {
+                    opacity = 0.0;
+                } else if (dist > r - 0.5) {
+                    opacity = (r + 0.5 - dist);
+                }
+            }
+            
+            if (opacity > 0.0) {
+                unsigned int *pixel = row + px;
+                if (opacity >= 0.99) {
+                    *pixel = bb | (gg << 8) | (rr << 16);
+                } else {
+                    unsigned int bgPixel = *pixel;
+                    unsigned char b_orig = bgPixel & 0xFF;
+                    unsigned char g_orig = (bgPixel >> 8) & 0xFF;
+                    unsigned char r_orig = (bgPixel >> 16) & 0xFF;
+                    
+                    unsigned char b_new = (unsigned char)(b_orig + (bb - b_orig) * opacity);
+                    unsigned char g_new = (unsigned char)(g_orig + (gg - g_orig) * opacity);
+                    unsigned char r_new = (unsigned char)(r_orig + (rr - r_orig) * opacity);
+                    
+                    *pixel = b_new | (g_new << 8) | (r_new << 16);
+                }
+            }
+        }
+    }
+}
+
 void DrawTextC(HDC hdc, const char *s, RECT r, UINT fmt, HFONT f, COLORREF c) {
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, c);
@@ -389,9 +446,9 @@ int UI_StripButton(unsigned int id, RECT r, unsigned int glyph, int selected) {
     
     COLORREF bg;
     if (selected) {
-        bg = Mix(RGB(48, 48, 56), g_accent, 0.7);
+        bg = Mix(RGB(16, 16, 20), g_accent, 0.6);
     } else {
-        bg = Mix(RGB(48, 48, 56), RGB(80, 80, 92), hover);
+        bg = Mix(RGB(16, 16, 20), RGB(56, 56, 68), hover);
     }
     
     FillRoundAA(g_bits, g_w, g_h, x, y, w, h, 8, bg);
@@ -443,52 +500,18 @@ int UI_FlyoutItem(unsigned int id, RECT r, unsigned int glyph, COLORREF glyphCol
         int bx = x + padL;
         int bw = w - padL - padR;
         
-        if (pos == 1) { // top item: round top, square bottom, top pad 4, bottom pad 2
+        if (pos == 1) { // top item: top pad 4, bottom pad 2
             int by = y + 4;
             int bh = h - 4 - 2;
-            
-            HRGN roundRgn = CreateRoundRectRgn(bx, by, bx + bw, by + bh + rad, rad, rad);
-            HRGN clipRgn = CreateRectRgn(bx, by, bx + bw, by + bh);
-            HRGN finalRgn = CreateRectRgn(0, 0, 0, 0);
-            CombineRgn(finalRgn, roundRgn, clipRgn, RGN_AND);
-            
-            SelectClipRgn(g_ui.hdc, finalRgn);
-            HBRUSH brush = CreateSolidBrush(bgBlend);
-            RECT rc = { bx, by, bx + bw, by + bh };
-            FillRect(g_ui.hdc, &rc, brush);
-            DeleteObject(brush);
-            
-            SelectClipRgn(g_ui.hdc, NULL);
-            DeleteObject(roundRgn);
-            DeleteObject(clipRgn);
-            DeleteObject(finalRgn);
-        } else if (pos == 2) { // bottom item: square top, round bottom, top pad 2, bottom pad 4
+            FillRoundAA(g_bits, g_w, g_h, bx, by, bw, bh, rad, bgBlend);
+        } else if (pos == 2) { // bottom item: top pad 2, bottom pad 4
             int by = y + 2;
             int bh = h - 2 - 4;
-            
-            HRGN roundRgn = CreateRoundRectRgn(bx, by - rad, bx + bw, by + bh, rad, rad);
-            HRGN clipRgn = CreateRectRgn(bx, by, bx + bw, by + bh);
-            HRGN finalRgn = CreateRectRgn(0, 0, 0, 0);
-            CombineRgn(finalRgn, roundRgn, clipRgn, RGN_AND);
-            
-            SelectClipRgn(g_ui.hdc, finalRgn);
-            HBRUSH brush = CreateSolidBrush(bgBlend);
-            RECT rc = { bx, by, bx + bw, by + bh };
-            FillRect(g_ui.hdc, &rc, brush);
-            DeleteObject(brush);
-            
-            SelectClipRgn(g_ui.hdc, NULL);
-            DeleteObject(roundRgn);
-            DeleteObject(clipRgn);
-            DeleteObject(finalRgn);
-        } else { // middle item: square all corners, top/bottom pad 2
+            FillRoundAA(g_bits, g_w, g_h, bx, by, bw, bh, rad, bgBlend);
+        } else { // middle item: top/bottom pad 2
             int by = y + 2;
             int bh = h - 4;
-            
-            HBRUSH brush = CreateSolidBrush(bgBlend);
-            RECT rc = { bx, by, bx + bw, by + bh };
-            FillRect(g_ui.hdc, &rc, brush);
-            DeleteObject(brush);
+            FillRoundAA(g_bits, g_w, g_h, bx, by, bw, bh, rad, bgBlend);
         }
     }
     

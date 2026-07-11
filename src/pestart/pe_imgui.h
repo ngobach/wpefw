@@ -368,9 +368,9 @@ int UI_ListItem(unsigned int id, RECT r, const char *name, HICON hIcon) {
                     Mix(RGB(40, 40, 46), RGB(70, 70, 82), hover));
     }
     if (hIcon) {
-        DrawIconEx(g_ui.hdc, x + 8, y + (h - 24) / 2, hIcon, 24, 24, 0, NULL, DI_NORMAL);
+        DrawIconEx(g_ui.hdc, x + 8, y + (h - 32) / 2, hIcon, 32, 32, 0, NULL, DI_NORMAL);
     }
-    RECT tr = { x + 40, y, x + w - 8, y + h };
+    RECT tr = { x + 48, y, x + w - 8, y + h };
     DrawTextC(g_ui.hdc, name, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE, g_fNorm, RGB(225, 225, 232));
 
     return clicked;
@@ -400,7 +400,7 @@ int UI_Tile(unsigned int id, RECT r, const char *name, HICON hIcon, COLORREF bas
     COLORREF hot = Mix(baseColor, RGB(255, 255, 255), 0.18);
     FillRoundAA(g_bits, g_w, g_h, x, y, w, h, 8, Mix(baseColor, hot, hover));
     if (hIcon) {
-        DrawIconEx(g_ui.hdc, x + 10, y + 10, hIcon, 28, 28, 0, NULL, DI_NORMAL);
+        DrawIconEx(g_ui.hdc, x + 10, y + 10, hIcon, 32, 32, 0, NULL, DI_NORMAL);
     }
     RECT tr = { x + 8, y + h - 24, x + w - 8, y + h - 6 };
     DrawTextC(g_ui.hdc, name, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE, g_fTile, RGB(255, 255, 255));

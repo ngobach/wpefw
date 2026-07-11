@@ -78,17 +78,18 @@ static int    g_everAnimating = 0;
 /* ---------------------------------------------------------------- */
 
 static HICON GetIcon(const char *path, int folder) {
-    HICON h = NULL;
+    SHFILEINFOA sfi = {0};
+    UINT flags = SHGFI_ICON | SHGFI_SMALLICON;
     if (folder) {
-        h = ExtractIconA(NULL, "shell32.dll", 4);
+        flags |= SHGFI_USEFILEATTRIBUTES;
+        SHGetFileInfoA(path, FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi), flags);
     } else {
-        h = ExtractIconA(NULL, path, 0);
-        if ((int)(INT_PTR)h <= 1)
-            h = ExtractIconA(NULL, "shell32.dll", 1);
+        SHGetFileInfoA(path, 0, &sfi, sizeof(sfi), flags);
     }
-    if (!h || (int)(INT_PTR)h <= 1)
-        h = ExtractIconA(NULL, "shell32.dll", 1);
-    return h;
+    if (sfi.hIcon) {
+        return sfi.hIcon;
+    }
+    return ExtractIconA(NULL, "shell32.dll", 1);
 }
 
 /* ---------------------------------------------------------------- */
@@ -176,11 +177,16 @@ static BOOL ResolveShortcut(const char *lnkPath, char *targetPath, HICON *phIcon
 
                     if (phIcon) {
                         *phIcon = NULL;
+                        SHFILEINFOA sfi = {0};
                         if (iconPath[0]) {
-                            ExtractIconExA(iconPath, iconIdx, phIcon, NULL, 1);
+                            HICON hL = NULL;
+                            if (ExtractIconExA(iconPath, iconIdx, &hL, NULL, 1) > 0 && hL) {
+                                *phIcon = hL;
+                            }
                         }
                         if (!*phIcon && targetPath[0]) {
-                            ExtractIconExA(targetPath, 0, phIcon, NULL, 1);
+                            SHGetFileInfoA(targetPath, 0, &sfi, sizeof(sfi), SHGFI_ICON | SHGFI_LARGEICON);
+                            *phIcon = sfi.hIcon;
                         }
                     }
                     success = TRUE;
@@ -457,12 +463,23 @@ static void RenderScene(double openE) {
             }
         }
     }
-
-    /* opaque pass: any non-zero RGB -> opaque */
+    /* opaque pass: force all pixels inside the panel to be opaque, keeping transparent corners */
     unsigned char *b = (unsigned char *)g_bits;
-    for (int i = 0; i < g_w * g_h; i++) {
-        if (b[0] | b[1] | b[2]) b[3] = 255;
-        b += 4;
+    for (int y = 0; y < g_h; y++) {
+        for (int x = 0; x < g_w; x++) {
+            int in_panel = 1;
+            if (y < RAD) {
+                if (x < RAD || x >= g_w - RAD) {
+                    if (!(b[0] | b[1] | b[2])) {
+                        in_panel = 0;
+                    }
+                }
+            }
+            if (in_panel) {
+                b[3] = 255;
+            }
+            b += 4;
+        }
     }
 }
 

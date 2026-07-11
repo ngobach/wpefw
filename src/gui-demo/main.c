@@ -33,7 +33,6 @@ static HWND hRadRed, hRadGreen, hRadBlue;
 static HWND hSlider, hProgress;
 static HWND hTree, hTab, hStatusBar;
 static HWND hStaticGroup, hStaticLabel, hStaticValue;
-static HWND hMainWnd;
 static HFONT hFontNormal, hFontBold;
 
 static void CreateControls(HWND hwnd) {
@@ -243,9 +242,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN: {
         HDC hdc = (HDC)wParam;
-        SetBkColor(hdc, RGB(255, 255, 255));
-        SetTextColor(hdc, RGB(0, 0, 0));
-        return (LRESULT)GetStockObject(WHITE_BRUSH);
+        SetBkColor(hdc, GetSysColor(COLOR_BTNFACE));
+        return (LRESULT)GetSysColorBrush(COLOR_BTNFACE);
     }
 
     case WM_NOTIFY: {
@@ -256,8 +254,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                 return CDRF_NOTIFYITEMDRAW;
             if (ntb->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
                 ntb->clrText = RGB(0, 0, 0);
-                ntb->clrBtnFace = RGB(255, 255, 255);
-                ntb->clrBtnHighlight = RGB(255, 255, 255);
+                ntb->clrBtnFace = GetSysColor(COLOR_BTNFACE);
+                ntb->clrBtnHighlight = GetSysColor(COLOR_BTNFACE);
                 return CDRF_NEWFONT;
             }
         }
@@ -400,12 +398,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
     wc.hInstance = hInstance;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.lpszClassName = "GuiDemoClass";
-    wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
     RegisterClassExA(&wc);
 
     HWND hwnd = CreateWindowExA(0, "GuiDemoClass", "Win32 GUI Controls Demo",
-        WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
-        CW_USEDEFAULT, CW_USEDEFAULT, 600, 530,
+        (WS_OVERLAPPEDWINDOW & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)) | WS_CLIPCHILDREN,
+        CW_USEDEFAULT, CW_USEDEFAULT, 600, 610,
         NULL, NULL, hInstance, NULL);
 
     ShowWindow(hwnd, nShow);

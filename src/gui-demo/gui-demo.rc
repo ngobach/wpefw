@@ -1,0 +1,3 @@
+#include <winuser.h>
+#define RT_MANIFEST 24
+1 RT_MANIFEST "gui-demo.exe.manifest"

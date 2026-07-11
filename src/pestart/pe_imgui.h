@@ -41,6 +41,10 @@ extern int g_dirty;
 extern int g_w, g_h;
 extern void *g_bits;
 extern double g_flyoutAnim;
+extern HWND g_hwnd;
+extern int g_caretPos;
+extern int g_selStart;
+extern int g_selEnd;
 
 /* GDI Drawing Helper Declarations */
 double easeOutCubic(double t);
@@ -417,39 +421,64 @@ void UI_InputText(unsigned int id, RECT r, char *buf, int maxLen, const char *pl
 
     double hover = UI_HoverAnimation(id, hovered);
 
-    /* 1. Draw double-layered antialiased border box */
-    COLORREF borderCol = Mix(RGB(56, 56, 68), g_accent, 0.4 + 0.6 * hover);
-    COLORREF bgCol = RGB(28, 28, 34);
+    int active = (GetForegroundWindow() == g_hwnd);
+
+    COLORREF bgCol = active ? RGB(26, 26, 32) : Mix(RGB(38, 38, 46), RGB(46, 46, 54), hover);
+    COLORREF borderCol = Mix(RGB(54, 54, 62), RGB(75, 75, 85), hover);
 
     FillRoundAA(g_bits, g_w, g_h, x, y, w, h, 8, borderCol);
     FillRoundAA(g_bits, g_w, g_h, x + 1, y + 1, w - 2, h - 2, 7, bgCol);
+
+    /* Draw modern Windows 11 focused state bottom accent bar */
+    if (active) {
+        FillRoundAA(g_bits, g_w, g_h, x + 8, y + h - 2, w - 16, 2, 0, g_accent);
+    }
 
     /* 2. Draw modern Search Glass Icon on the left */
     int iconY = y + h / 2;
     DrawGlyph(g_ui.hdc, 0xE721, x + 20, iconY, Mix(RGB(150, 150, 160), g_accent, 0.8), g_fMDL2);
 
     /* 3. Draw text or placeholder */
-    RECT tr = { x + 40, y, drawR.right - 30, y + h };
+    RECT tr = { x + 40, y, drawR.right - 10, y + h };
     if (buf[0]) {
-        DrawTextC(g_ui.hdc, buf, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE, g_fNorm, RGB(240, 240, 245));
-        
-        /* 4. Draw Clear (X) button on the right */
-        int rx = drawR.right - 24;
-        RECT clearR = { rx, y + (h - 20) / 2, rx + 20, y + (h - 20) / 2 + 20 };
-        int clearHover = (g_ui.mx >= clearR.left && g_ui.mx < clearR.right &&
-                          g_ui.my >= clearR.top && g_ui.my < clearR.bottom);
-                          
-        COLORREF clearCol = clearHover ? RGB(255, 100, 100) : RGB(140, 140, 150);
-        DrawGlyph(g_ui.hdc, 0xE711, rx + 10, y + h / 2, clearCol, g_fMDL2);
-        
-        if (clearHover && g_ui.mouseClicked) {
-            buf[0] = 0;
-            g_scroll = 0;
-            g_targetScroll = 0;
-            g_dirty = 1;
+        /* Draw selection background if text is selected */
+        if (g_selStart != g_selEnd) {
+            int sMin = g_selStart < g_selEnd ? g_selStart : g_selEnd;
+            int sMax = g_selStart > g_selEnd ? g_selStart : g_selEnd;
+            SIZE szStart, szEnd;
+            HGDIOBJ oldFont = SelectObject(g_ui.hdc, g_fNorm);
+            GetTextExtentPoint32A(g_ui.hdc, buf, sMin, &szStart);
+            GetTextExtentPoint32A(g_ui.hdc, buf, sMax, &szEnd);
+            SelectObject(g_ui.hdc, oldFont);
+            
+            RECT selR = { x + 40 + szStart.cx, y + (h - 18) / 2, x + 40 + szEnd.cx, y + (h - 18) / 2 + 18 };
+            HBRUSH hSelBrush = CreateSolidBrush(Mix(g_accent, RGB(255, 255, 255), 0.15));
+            FillRect(g_ui.hdc, &selR, hSelBrush);
+            DeleteObject(hSelBrush);
         }
+
+        DrawTextC(g_ui.hdc, buf, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE, g_fNorm, RGB(240, 240, 245));
     } else {
         DrawTextC(g_ui.hdc, placeholder, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE, g_fNorm, RGB(130, 130, 140));
+    }
+
+    /* 5. Draw blinking caret at the caret position */
+    int caretX = x + 40;
+    if (buf[0]) {
+        SIZE sz;
+        HGDIOBJ oldFont = SelectObject(g_ui.hdc, g_fNorm);
+        GetTextExtentPoint32A(g_ui.hdc, buf, g_caretPos, &sz);
+        SelectObject(g_ui.hdc, oldFont);
+        caretX += sz.cx;
+    }
+
+    DWORD tick = GetTickCount();
+    int showCaret = (tick / 500) % 2;
+    if (active && showCaret) {
+        RECT caretR = { caretX, y + (h - 16) / 2, caretX + 1, y + (h - 16) / 2 + 16 };
+        HBRUSH hBr = CreateSolidBrush(RGB(240, 240, 245));
+        FillRect(g_ui.hdc, &caretR, hBr);
+        DeleteObject(hBr);
     }
 }
 

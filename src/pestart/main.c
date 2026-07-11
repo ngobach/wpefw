@@ -59,7 +59,7 @@ static HBITMAP g_panelBmp = NULL;
 static void  *g_panelBits = NULL;
 
 /* state */
-static HWND   g_hwnd = NULL;
+HWND   g_hwnd = NULL;
 static DWORD  g_openStart = 0;
 static int    g_closing = 0;
 static DWORD  g_closeStart = 0;
@@ -69,6 +69,9 @@ static int    g_flyoutDy = 0;        /* current slide offset (shared by draw + h
 double g_scroll = 0;
 double g_targetScroll = 0;
 static char   g_search[128] = {0};
+int    g_caretPos = 0;
+int    g_selStart = 0;
+int    g_selEnd = 0;
 int    g_dirty = 1;
 static int    g_everAnimating = 0;
 
@@ -79,7 +82,7 @@ static int    g_everAnimating = 0;
 
 static HICON GetIcon(const char *path, int folder) {
     SHFILEINFOA sfi = {0};
-    UINT flags = SHGFI_ICON | SHGFI_SMALLICON;
+    UINT flags = SHGFI_ICON | SHGFI_LARGEICON;
     if (folder) {
         flags |= SHGFI_USEFILEATTRIBUTES;
         SHGetFileInfoA(path, FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi), flags);
@@ -520,6 +523,19 @@ static void PowerAction(int restart) {
     ShowWindow(g_hwnd, SW_HIDE);
 }
 
+static void DeleteSelection(void) {
+    int sMin = g_selStart < g_selEnd ? g_selStart : g_selEnd;
+    int sMax = g_selStart > g_selEnd ? g_selStart : g_selEnd;
+    if (sMin == sMax) return;
+    
+    int len = (int)strlen(g_search);
+    memmove(&g_search[sMin], &g_search[sMax], len - sMax + 1);
+    
+    g_caretPos = sMin;
+    g_selStart = g_caretPos;
+    g_selEnd = g_caretPos;
+}
+
 /* ---------------------------------------------------------------- */
 /*  Window procedure                                                */
 /* ---------------------------------------------------------------- */
@@ -535,6 +551,14 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     case WM_TIMER: {
         DWORD now = GetTickCount();
         if (!IsWindowVisible(hwnd) && !g_closing) return 0;
+
+        /* Blinking caret dirty check (forces redraw every 500ms when visible) */
+        static int lastBlink = 0;
+        int currentBlink = (now / 500) % 2;
+        if (currentBlink != lastBlink) {
+            lastBlink = currentBlink;
+            g_dirty = 1;
+        }
 
         double openT = (double)(now - g_openStart) / OPEN_MS;
         if (openT > 1) openT = 1;
@@ -634,31 +658,114 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     }
 
     case WM_CHAR: {
+        int len = (int)strlen(g_search);
         if (wParam == 8) { /* backspace */
-            int l = (int)strlen(g_search);
-            if (l > 0) g_search[l - 1] = 0;
-            g_scroll = 0;
-            g_targetScroll = 0;
+            if (g_selStart != g_selEnd) {
+                DeleteSelection();
+                g_scroll = 0;
+                g_targetScroll = 0;
+            } else if (g_caretPos > 0) {
+                memmove(&g_search[g_caretPos - 1], &g_search[g_caretPos], len - g_caretPos + 1);
+                g_caretPos--;
+                g_selStart = g_caretPos;
+                g_selEnd = g_caretPos;
+                g_scroll = 0;
+                g_targetScroll = 0;
+            }
             g_dirty = 1;
         } else if (wParam >= 32 && wParam < 127) {
-            int l = (int)strlen(g_search);
-            if (l < (int)sizeof(g_search) - 1) {
-                g_search[l] = (char)wParam;
-                g_search[l + 1] = 0;
+            if (g_selStart != g_selEnd) {
+                DeleteSelection();
+                len = (int)strlen(g_search);
             }
-            g_scroll = 0;
-            g_targetScroll = 0;
+            if (len < (int)sizeof(g_search) - 1) {
+                memmove(&g_search[g_caretPos + 1], &g_search[g_caretPos], len - g_caretPos + 1);
+                g_search[g_caretPos] = (char)wParam;
+                g_caretPos++;
+                g_selStart = g_caretPos;
+                g_selEnd = g_caretPos;
+                g_scroll = 0;
+                g_targetScroll = 0;
+            }
             g_dirty = 1;
         }
         return 0;
     }
 
-    case WM_KEYDOWN:
+    case WM_KEYDOWN: {
+        int shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+        int ctrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+        int len = (int)strlen(g_search);
+
         if (wParam == VK_ESCAPE) {
             if (g_flyout) { g_flyout = 0; g_dirty = 1; }
             else { ShowWindow(hwnd, SW_HIDE); }
+            return 0;
         }
-        return 0;
+        
+        if (ctrl && (wParam == 'A' || wParam == 'a')) {
+            g_selStart = 0;
+            g_selEnd = len;
+            g_caretPos = len;
+            g_dirty = 1;
+            return 0;
+        }
+        
+        if (wParam == VK_LEFT) {
+            if (shift) {
+                if (g_caretPos > 0) {
+                    g_caretPos--;
+                    g_selEnd = g_caretPos;
+                }
+            } else {
+                if (g_selStart != g_selEnd) {
+                    int sMin = g_selStart < g_selEnd ? g_selStart : g_selEnd;
+                    g_caretPos = sMin;
+                } else if (g_caretPos > 0) {
+                    g_caretPos--;
+                }
+                g_selStart = g_caretPos;
+                g_selEnd = g_caretPos;
+            }
+            g_dirty = 1;
+            return 0;
+        }
+        
+        if (wParam == VK_RIGHT) {
+            if (shift) {
+                if (g_caretPos < len) {
+                    g_caretPos++;
+                    g_selEnd = g_caretPos;
+                }
+            } else {
+                if (g_selStart != g_selEnd) {
+                    int sMax = g_selStart > g_selEnd ? g_selStart : g_selEnd;
+                    g_caretPos = sMax;
+                } else if (g_caretPos < len) {
+                    g_caretPos++;
+                }
+                g_selStart = g_caretPos;
+                g_selEnd = g_caretPos;
+            }
+            g_dirty = 1;
+            return 0;
+        }
+        
+        if (wParam == VK_DELETE) {
+            if (g_selStart != g_selEnd) {
+                DeleteSelection();
+                g_scroll = 0;
+                g_targetScroll = 0;
+            } else if (g_caretPos < len) {
+                memmove(&g_search[g_caretPos], &g_search[g_caretPos + 1], len - g_caretPos);
+                g_scroll = 0;
+                g_targetScroll = 0;
+            }
+            g_dirty = 1;
+            return 0;
+        }
+        break;
+    }
 
     case WM_ACTIVATE:
         WriteLog("[WndProc] WM_ACTIVATE: wParam=%u, IsVisible=%d, now=%u\n",
@@ -693,6 +800,9 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             g_closing = 0;
             g_flyout = 0;
             g_flyoutAnim = 0;
+            g_caretPos = (int)strlen(g_search);
+            g_selStart = g_caretPos;
+            g_selEnd = g_caretPos;
             g_dirty = 1;
             SetWindowPos(hwnd, HWND_TOPMOST, g_winX, g_winY, 0, 0, SWP_NOSIZE);
             RenderScene(0);

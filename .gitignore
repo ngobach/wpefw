@@ -5,3 +5,4 @@ scripts/__pycache__/
 .DS_Store
 src/**/*.exe
 src/**/*.pdb
+src/**/*.res

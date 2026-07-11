@@ -1,3 +1,41 @@
-#include <winuser.h>
+#include <windows.h>
+#include <commctrl.h>
+#include "resource.h"
+
 #define RT_MANIFEST 24
 1 RT_MANIFEST "gui-demo.exe.manifest"
+
+IDD_GUIDIALOG DIALOGEX 0, 0, 300, 310
+STYLE DS_SETFONT | DS_SHELLFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN
+CAPTION "Win32 GUI Controls Demo"
+FONT 8, "MS Shell Dlg", 400, 0, 0x0409
+BEGIN
+    LTEXT           "Input Controls", -1, 7, 4, 130, 8
+    LTEXT           "Type something:", -1, 9, 16, 60, 8
+    EDITTEXT        IDC_EDIT_INPUT, 9, 26, 125, 12, ES_AUTOHSCROLL
+    PUSHBUTTON      "Click Me", ID_BTN_CLICK, 9, 42, 40, 14
+    PUSHBUTTON      "Add Item", ID_BTN_ADD, 52, 42, 40, 14
+    PUSHBUTTON      "Remove", ID_BTN_REMOVE, 95, 42, 40, 14
+    PUSHBUTTON      "Clear All", ID_BTN_CLEAR, 9, 60, 40, 14
+    AUTOCHECKBOX    "Enable List", ID_CHK_ENABLE, 52, 62, 50, 8
+    AUTOCHECKBOX    "Bold Text", ID_CHK_BOLD, 105, 62, 45, 8
+    LTEXT           "Color:", -1, 9, 78, 125, 8
+    AUTORADIOBUTTON "Red", ID_RAD_RED, 14, 90, 30, 8
+    AUTORADIOBUTTON "Green", ID_RAD_GREEN, 48, 90, 35, 8
+    AUTORADIOBUTTON "Blue", ID_RAD_BLUE, 86, 90, 30, 8
+    LTEXT           "ComboBox:", -1, 9, 106, 35, 8
+    COMBOBOX        IDC_COMBO_BOX, 46, 103, 90, 60, CBS_DROPDOWNLIST | CBS_HASSTRINGS
+    LTEXT           "Multi-line Edit:", -1, 9, 120, 50, 8
+    EDITTEXT        IDC_EDIT_MULTI, 9, 130, 125, 50, ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL
+
+    LTEXT           "Value: 50", IDC_STATIC_VALUE, 150, 8, 130, 8, SS_CENTER
+    LTEXT           "Slider:", -1, 150, 20, 28, 8
+    CONTROL         "", IDC_SLIDER, TRACKBAR_CLASS, TBS_AUTOTICKS | TBS_TOOLTIPS, 180, 18, 100, 16
+    LTEXT           "Progress:", -1, 150, 38, 32, 8
+    CONTROL         "", IDC_PROGRESS, PROGRESS_CLASS, PBS_SMOOTH, 184, 36, 100, 12
+    LTEXT           "ListBox:", -1, 150, 54, 32, 8
+    LISTBOX         IDC_LIST_BOX, 150, 64, 130, 45, LBS_NOTIFY | LBS_HASSTRINGS | WS_BORDER | WS_VSCROLL
+    LTEXT           "TreeView:", -1, 150, 115, 36, 8
+    CONTROL         "", IDC_TREE, "SysTreeView32", TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | WS_BORDER, 150, 126, 130, 54
+    CONTROL         "", IDC_TAB, "SysTabControl32", 0, 5, 195, 280, 50
+END

@@ -237,12 +237,12 @@ programs: $(PROGRAMS_BUILD)/gui-demo.exe $(PROGRAMS_BUILD)/tray.exe
 $(PROGRAMS_BUILD)/gui-demo.exe: $(PROGRAMS_SRC)/gui-demo/main.c
 	mkdir -p $(PROGRAMS_BUILD)
 	$(MAKE) -C $(PROGRAMS_SRC)/gui-demo all
-	cp $(PROGRAMS_SRC)/gui-demo/gui-demo.exe $@
+	cp $(PROGRAMS_SRC)/gui-demo/build/gui-demo.exe $@
 
 $(PROGRAMS_BUILD)/tray.exe: $(PROGRAMS_SRC)/tray-app/main.c
 	mkdir -p $(PROGRAMS_BUILD)
 	$(MAKE) -C $(PROGRAMS_SRC)/tray-app all
-	cp $(PROGRAMS_SRC)/tray-app/tray.exe $@
+	cp $(PROGRAMS_SRC)/tray-app/build/tray.exe $@
 
 .PHONY: push-programs
 push-programs: programs

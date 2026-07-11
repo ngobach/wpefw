@@ -1,0 +1,20 @@
+#define IDD_GUIDIALOG     100
+
+#define ID_BTN_CLICK     1001
+#define ID_BTN_CLEAR     1002
+#define ID_BTN_ADD       1003
+#define ID_BTN_REMOVE    1004
+#define IDC_EDIT_INPUT   1101
+#define IDC_EDIT_MULTI   1102
+#define IDC_LIST_BOX     1201
+#define IDC_COMBO_BOX    1202
+#define ID_CHK_ENABLE    1301
+#define ID_CHK_BOLD      1302
+#define ID_RAD_RED       1401
+#define ID_RAD_GREEN     1402
+#define ID_RAD_BLUE      1403
+#define IDC_SLIDER       1501
+#define IDC_PROGRESS     1502
+#define IDC_TREE         1601
+#define IDC_TAB          1701
+#define IDC_STATIC_VALUE 1801

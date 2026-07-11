@@ -18,6 +18,7 @@
 #define OPEN_MS   220
 #define CLOSE_MS  160
 #define FLYOUT_MS 100
+#define WM_PESTART_TOGGLE (WM_APP + 1)
 
 typedef enum { IT_PROGRAM, IT_FOLDER } ItemType;
 
@@ -493,25 +494,21 @@ static void Present(int fade) {
 static void LaunchItem(int idx) {
     Item *it = &g_items[idx];
     ShellExecuteA(g_hwnd, "open", it->target, NULL, NULL, SW_SHOWNORMAL);
-    g_closing = 1;
-    g_closeStart = GetTickCount();
+    ShowWindow(g_hwnd, SW_HIDE);
 }
 
 static void LaunchShellFolder(const char *folder) {
     ShellExecuteA(g_hwnd, "open", "explorer.exe", folder, NULL, SW_SHOWNORMAL);
-    g_closing = 1;
-    g_closeStart = GetTickCount();
+    ShowWindow(g_hwnd, SW_HIDE);
 }
 
 static void PowerAction(int restart) {
     const char *verb = restart ? "reboot" : "shutdown";
     HINSTANCE r = ShellExecuteA(g_hwnd, "open", "wpeutil", verb, NULL, SW_HIDE);
     if ((int)(INT_PTR)r <= 32) {
-        /* fall back to PECMD */
         ShellExecuteA(g_hwnd, "open", "PECMD", restart ? "REBOOT" : "SHUT", NULL, SW_HIDE);
     }
-    g_closing = 1;
-    g_closeStart = GetTickCount();
+    ShowWindow(g_hwnd, SW_HIDE);
 }
 
 /* ---------------------------------------------------------------- */
@@ -528,6 +525,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 
     case WM_TIMER: {
         DWORD now = GetTickCount();
+        if (!IsWindowVisible(hwnd) && !g_closing) return 0;
+
         double openT = (double)(now - g_openStart) / OPEN_MS;
         if (openT > 1) openT = 1;
         double openE = easeOutCubic(openT);
@@ -568,7 +567,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         int fade;
         if (g_closing) {
             double ct = (double)(now - g_closeStart) / CLOSE_MS;
-            if (ct >= 1) { PostQuitMessage(0); return 0; }
+            if (ct >= 1) { ShowWindow(hwnd, SW_HIDE); g_closing = 0; return 0; }
             fade = (int)((1.0 - easeOutCubic(ct)) * 255);
         } else {
             fade = (int)(openE * 255);
@@ -648,15 +647,45 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     case WM_KEYDOWN:
         if (wParam == VK_ESCAPE) {
             if (g_flyout) { g_flyout = 0; g_dirty = 1; }
-            else { g_closing = 1; g_closeStart = GetTickCount(); }
+            else { ShowWindow(hwnd, SW_HIDE); }
         }
         return 0;
 
     case WM_ACTIVATE:
         if (LOWORD(wParam) == WA_INACTIVE && !g_closing) {
-            g_closing = 1;
-            g_closeStart = GetTickCount();
+            ShowWindow(hwnd, SW_HIDE);
         }
+        return 0;
+
+    case WM_PESTART_TOGGLE: {
+        if (IsWindowVisible(hwnd)) {
+            ShowWindow(hwnd, SW_HIDE);
+        } else {
+            RECT wa;
+            SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
+            g_winX = wa.left;
+            g_winY = wa.bottom - g_h;
+            if (g_winY < wa.top) g_winY = wa.top;
+            g_openStart = GetTickCount();
+            g_closing = 0;
+            g_flyout = 0;
+            g_flyoutAnim = 0;
+            g_dirty = 1;
+            SetWindowPos(hwnd, HWND_TOPMOST, g_winX, g_winY, 0, 0, SWP_NOSIZE);
+            RenderScene(0);
+            Present(0);
+            ShowWindow(hwnd, SW_SHOW);
+            SetForegroundWindow(hwnd);
+        }
+        return 0;
+    }
+
+    case WM_ENDSESSION:
+        PostQuitMessage(0);
+        return 0;
+
+    case WM_CLOSE:
+        PostQuitMessage(0);
         return 0;
 
     case WM_SETCURSOR:
@@ -693,7 +722,14 @@ static void BuildPanel(void) {
 /* ---------------------------------------------------------------- */
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow) {
-    (void)hPrev; (void)lpCmd; (void)nShow;
+    (void)hPrev; (void)nShow;
+
+    HWND hExisting = FindWindowA("PestartClass", NULL);
+    if (hExisting) {
+        SendMessage(hExisting, WM_PESTART_TOGGLE, 0, 0);
+        return 0;
+    }
+
     LogInit();
     CoInitialize(NULL);
 

@@ -415,10 +415,12 @@ static void RenderScene(double openE) {
             DrawTextC(hdc, "Check spelling or search terms.", rSub, DT_CENTER | DT_WORDBREAK, g_fNorm, RGB(110, 110, 120));
         }
 
-        /* tiles */
-        RECT trh = {tilesX, contentTop + dy, g_w - PAD, listTop + dy};
-        DrawTextC(hdc, "Pinned", trh, DT_LEFT | DT_VCENTER | DT_SINGLELINE,
-                  g_fBold, RGB(210, 210, 220));
+        /* Pinned list header */
+        {
+            RECT trh = {tilesX, contentTop + dy, g_w - PAD, listTop + dy};
+            DrawTextC(hdc, "Pinned", trh, DT_LEFT | DT_VCENTER | DT_SINGLELINE,
+                      g_fBold, RGB(210, 210, 220));
+        }
 
         int npinned = 0;
         for (int i = 0; i < g_nitems; i++) {

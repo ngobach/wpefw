@@ -36,6 +36,7 @@ extern double g_hoverStates[1024];
 extern HFONT g_fNorm, g_fBold, g_fSmall, g_fTitle, g_fTile, g_fMDL2;
 extern COLORREF g_accent;
 extern double g_scroll;
+extern double g_targetScroll;
 extern int g_dirty;
 extern int g_w, g_h;
 extern void *g_bits;
@@ -409,16 +410,46 @@ int UI_Tile(unsigned int id, RECT r, const char *name, HICON hIcon, COLORREF bas
 
 void UI_InputText(unsigned int id, RECT r, char *buf, int maxLen, const char *placeholder) {
     RECT drawR = { r.left, r.top + g_ui.dy, r.right, r.bottom + g_ui.dy };
-
     int x = drawR.left, y = drawR.top, w = drawR.right - drawR.left, h = drawR.bottom - drawR.top;
-    FillRoundAA(g_bits, g_w, g_h, x, y, w, h, 8, RGB(48, 48, 56));
-    DrawWinLogo(g_ui.hdc, x + 14, y + 11, 16, g_accent);
 
-    RECT tr = { x + 40, y, drawR.right - 12, y + h };
+    int hovered = (g_ui.mx >= drawR.left && g_ui.mx < drawR.right &&
+                   g_ui.my >= drawR.top && g_ui.my < drawR.bottom);
+
+    double hover = UI_HoverAnimation(id, hovered);
+
+    /* 1. Draw double-layered antialiased border box */
+    COLORREF borderCol = Mix(RGB(56, 56, 68), g_accent, 0.4 + 0.6 * hover);
+    COLORREF bgCol = RGB(28, 28, 34);
+
+    FillRoundAA(g_bits, g_w, g_h, x, y, w, h, 8, borderCol);
+    FillRoundAA(g_bits, g_w, g_h, x + 1, y + 1, w - 2, h - 2, 7, bgCol);
+
+    /* 2. Draw modern Search Glass Icon on the left */
+    int iconY = y + h / 2;
+    DrawGlyph(g_ui.hdc, 0xE721, x + 20, iconY, Mix(RGB(150, 150, 160), g_accent, 0.8), g_fMDL2);
+
+    /* 3. Draw text or placeholder */
+    RECT tr = { x + 40, y, drawR.right - 30, y + h };
     if (buf[0]) {
-        DrawTextC(g_ui.hdc, buf, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE, g_fNorm, RGB(235, 235, 240));
+        DrawTextC(g_ui.hdc, buf, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE, g_fNorm, RGB(240, 240, 245));
+        
+        /* 4. Draw Clear (X) button on the right */
+        int rx = drawR.right - 24;
+        RECT clearR = { rx, y + (h - 20) / 2, rx + 20, y + (h - 20) / 2 + 20 };
+        int clearHover = (g_ui.mx >= clearR.left && g_ui.mx < clearR.right &&
+                          g_ui.my >= clearR.top && g_ui.my < clearR.bottom);
+                          
+        COLORREF clearCol = clearHover ? RGB(255, 100, 100) : RGB(140, 140, 150);
+        DrawGlyph(g_ui.hdc, 0xE711, rx + 10, y + h / 2, clearCol, g_fMDL2);
+        
+        if (clearHover && g_ui.mouseClicked) {
+            buf[0] = 0;
+            g_scroll = 0;
+            g_targetScroll = 0;
+            g_dirty = 1;
+        }
     } else {
-        DrawTextC(g_ui.hdc, placeholder, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE, g_fNorm, RGB(150, 150, 160));
+        DrawTextC(g_ui.hdc, placeholder, tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE, g_fNorm, RGB(130, 130, 140));
     }
 }
 

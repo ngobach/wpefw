@@ -84,12 +84,12 @@ check-deps:
 		echo "The apps drive will not be built."; \
 	fi
 
-$(BUILD_OVERLAY): $(SRC_OVERLAY) build/.ulua.stamp build/.winxshell.stamp build/.pestart.stamp build/.explorerpp.stamp build/.pecmd.stamp build/.imdisk.stamp build/.penetwork.stamp build/.e7zip.stamp build/.windlls.stamp
+$(BUILD_OVERLAY): $(SRC_OVERLAY) build/.ulua.stamp build/.winxshell.stamp build/programs/pestart.exe build/.explorerpp.stamp build/.pecmd.stamp build/.imdisk.stamp build/.penetwork.stamp build/.e7zip.stamp build/.windlls.stamp
 	mkdir -p $(BUILD_OVERLAY)
 	mkdir -p $(BUILD_OVERLAY)/Windows/System32
 	cp -r build/ulua $(BUILD_OVERLAY)/
 	cp -r build/winxshell/WinXShell/. $(BUILD_OVERLAY)/WinXShell/
-	cp build/pestart/pestart.exe $(BUILD_OVERLAY)/Windows/System32/pestart.exe
+	cp build/programs/pestart.exe $(BUILD_OVERLAY)/Windows/System32/pestart.exe
 	mkdir -p "$(BUILD_OVERLAY)/Program Files/Explorer++"
 	cp -r build/explorerpp/. "$(BUILD_OVERLAY)/Program Files/Explorer++/"
 	cp build/pecmd/PECMD.EXE $(BUILD_OVERLAY)/Windows/System32/PECMD.EXE

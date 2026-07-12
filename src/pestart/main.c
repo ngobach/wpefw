@@ -13,12 +13,13 @@
 /*  Pure GDI, layered window, dark theme, smooth animations.        */
 /* ---------------------------------------------------------------- */
 
-#define MAX_ITEMS 64
+#define MAX_ITEMS 256
 #define MAX_PATH_LEN 256
 #define OPEN_MS   220
 #define CLOSE_MS  160
 #define FLYOUT_MS 100
 #define WM_PESTART_TOGGLE (WM_APP + 1)
+#define WM_SCAN_COMPLETE (WM_APP + 2)
 
 typedef enum { IT_PROGRAM, IT_FOLDER } ItemType;
 
@@ -39,6 +40,11 @@ static int     g_nitems = 0;
 
 static int     g_filt[MAX_ITEMS];
 static int     g_nfilt = 0;
+
+static int     g_scanning = 0;
+static Item    g_tempItems[MAX_ITEMS];
+static int     g_tempNitems = 0;
+static int     g_useTempArray = 0;
 
 static char    g_userName[64] = {0};
 COLORREF g_accent = RGB(0, 120, 215);
@@ -105,15 +111,18 @@ static COLORREF g_palette[] = {
 };
 
 static void AddItem(ItemType t, const char *name, const char *target, int tile) {
-    if (g_nitems >= MAX_ITEMS) return;
-    Item *it = &g_items[g_nitems];
+    Item *list = g_useTempArray ? g_tempItems : g_items;
+    int *p_count = g_useTempArray ? &g_tempNitems : &g_nitems;
+    
+    if (*p_count >= MAX_ITEMS) return;
+    Item *it = &list[*p_count];
     it->type = t;
     lstrcpynA(it->name, name, sizeof(it->name));
     lstrcpynA(it->target, target, sizeof(it->target));
     it->tile = tile;
     it->hIcon = GetIcon(target, t == IT_FOLDER);
-    it->tileColor = g_palette[g_nitems % (sizeof(g_palette)/sizeof(g_palette[0]))];
-    g_nitems++;
+    it->tileColor = g_palette[*p_count % (sizeof(g_palette)/sizeof(g_palette[0]))];
+    (*p_count)++;
 }
 
 static int StrIStr(const char *hay, const char *ndl) {
@@ -233,8 +242,11 @@ static void ScanProgramsDir(const char *dirPath, int isPinnedFolder) {
                     
                     WriteLog("[FOUND] %s -> %s (Pinned=%d)\n", name, target, isPinnedFolder);
                     AddItem(IT_PROGRAM, name, target, isPinnedFolder);
-                    if (g_nitems > 0 && hIcon) {
-                        g_items[g_nitems - 1].hIcon = hIcon;
+                    int *p_count = g_useTempArray ? &g_tempNitems : &g_nitems;
+                    Item *list = g_useTempArray ? g_tempItems : g_items;
+                    if (*p_count > 0 && hIcon) {
+                        if (list[*p_count - 1].hIcon) DestroyIcon(list[*p_count - 1].hIcon);
+                        list[*p_count - 1].hIcon = hIcon;
                     }
                 } else {
                     WriteLog("[FAILED] To resolve shortcut: %s\n", fullPath);
@@ -244,6 +256,30 @@ static void ScanProgramsDir(const char *dirPath, int isPinnedFolder) {
     } while (FindNextFileA(hFind, &fd));
     
     FindClose(hFind);
+}
+
+static DWORD WINAPI ScanThreadProc(LPVOID lpParam) {
+    (void)lpParam;
+    CoInitialize(NULL);
+    g_useTempArray = 1;
+    g_tempNitems = 0;
+    
+    char pathUser[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PROGRAMS, NULL, 0, pathUser))) {
+        ScanProgramsDir(pathUser, 0);
+    }
+    
+    g_useTempArray = 0;
+    CoUninitialize();
+    
+    PostMessageA(g_hwnd, WM_SCAN_COMPLETE, 0, 0);
+    return 0;
+}
+
+static void TriggerBackgroundScan(void) {
+    if (g_scanning) return;
+    g_scanning = 1;
+    CreateThread(NULL, 0, ScanThreadProc, NULL, 0, NULL);
 }
 
 
@@ -378,7 +414,7 @@ static void RenderScene(double openE) {
         }
 
         /* bottom bar */
-        FillRoundPartialAA(g_bits, g_w, g_h, 1, bottomTop + dy, g_w - 2, BOTTOM_H - 1, RAD - 1, RGB(16, 16, 20), 0, 1);
+        FillRound(hdc, 1, bottomTop + dy, g_w - 2, BOTTOM_H, 0, RGB(16, 16, 20));
         
         /* bottom bar divider line */
         {
@@ -472,12 +508,6 @@ static void RenderScene(double openE) {
         for (int x = 0; x < g_w; x++) {
             int in_panel = 1;
             if (y < RAD) {
-                if (x < RAD || x >= g_w - RAD) {
-                    if (!(b[0] | b[1] | b[2])) {
-                        in_panel = 0;
-                    }
-                }
-            } else if (y >= g_h - RAD) {
                 if (x < RAD || x >= g_w - RAD) {
                     if (!(b[0] | b[1] | b[2])) {
                         in_panel = 0;
@@ -793,14 +823,15 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             WriteLog("[WndProc] WM_PESTART_TOGGLE: Set LastHideTime=%u\n", now);
         } else {
             DWORD lastHide = (DWORD)(UINT_PTR)GetPropA(hwnd, "LastHideTime");
-            if (lastHide != 0 && now - lastHide < 500) {
+            if (lastHide != 0 && now - lastHide < 100) {
                 WriteLog("[WndProc] WM_PESTART_TOGGLE: Debounced show request! diff=%u\n", now - lastHide);
                 return 0;
             }
             RECT wa;
             SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
-            g_winX = wa.left + 12;
-            g_winY = wa.bottom - g_h - 12;
+            g_winX = wa.left;
+            g_winY = wa.bottom - g_h;
+            if (g_winY < wa.top) g_winY = wa.top;
             g_openStart = GetTickCount();
             g_closing = 0;
             g_flyout = 0;
@@ -809,12 +840,27 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             g_selStart = g_caretPos;
             g_selEnd = g_caretPos;
             g_dirty = 1;
+            TriggerBackgroundScan();
             SetWindowPos(hwnd, HWND_TOPMOST, g_winX, g_winY, 0, 0, SWP_NOSIZE);
             RenderScene(0);
             Present(0);
             ShowWindow(hwnd, SW_SHOW);
             SetForegroundWindow(hwnd);
         }
+        return 0;
+    }
+
+    case WM_SCAN_COMPLETE: {
+        WriteLog("[SCAN] Background scan complete, swapping list. Items count: %d\n", g_tempNitems);
+        for (int i = 0; i < g_nitems; i++) {
+            if (g_items[i].hIcon) {
+                DestroyIcon(g_items[i].hIcon);
+            }
+        }
+        memcpy(g_items, g_tempItems, sizeof(Item) * g_tempNitems);
+        g_nitems = g_tempNitems;
+        g_scanning = 0;
+        g_dirty = 1;
         return 0;
     }
 
@@ -853,10 +899,10 @@ static void BuildPanel(void) {
     bmi.bmiHeader.biCompression = BI_RGB;
     g_panelBmp = CreateDIBSection(g_panelDC, &bmi, DIB_RGB_COLORS, &g_panelBits, NULL, 0);
     SelectObject(g_panelDC, g_panelBmp);
-    /* Draw 1px Fluent border first */
-    FillRoundAA(g_panelBits, g_w, g_h, 0, 0, g_w, g_h, RAD, RGB(55, 55, 62));
-    /* Draw main rounded gradient panel inside, inset by 1px */
-    FillRoundGradAA(g_panelBits, g_w, g_h, 1, 1, g_w - 2, g_h - 2, RAD - 1, RGB(32, 32, 38), RGB(20, 20, 25));
+    /* Draw 1px Fluent border first, rounding only the top corners */
+    FillRoundPartialAA(g_panelBits, g_w, g_h, 0, 0, g_w, g_h, RAD, RGB(55, 55, 62), 1, 0);
+    /* Draw main rounded gradient panel inside, inset by 1px (bottom goes all the way) */
+    FillRoundGradTopAA(g_panelBits, g_w, g_h, 1, 1, g_w - 2, g_h, RAD - 1, RGB(32, 32, 38), RGB(20, 20, 25));
 }
 
 /* ---------------------------------------------------------------- */
@@ -886,8 +932,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
     int sy = GetSystemMetrics(SM_CYSCREEN);
     RECT wa = {0, 0, sx, sy};
     SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
-    g_winX = wa.left + 12;
-    g_winY = wa.bottom - g_h - 12;
+    g_winX = wa.left;
+    g_winY = wa.bottom - g_h;
+    if (g_winY < wa.top) g_winY = wa.top;
 
     /* surface */
     g_hdc = CreateCompatibleDC(NULL);

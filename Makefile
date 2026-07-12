@@ -86,12 +86,12 @@ check-deps:
 
 $(BUILD_OVERLAY): $(SRC_OVERLAY) build/.ulua.stamp build/.winxshell.stamp build/.pestart.stamp build/.explorerpp.stamp build/.pecmd.stamp build/.imdisk.stamp build/.penetwork.stamp build/.e7zip.stamp build/.windlls.stamp
 	mkdir -p $(BUILD_OVERLAY)
+	mkdir -p $(BUILD_OVERLAY)/Windows/System32
 	cp -r build/ulua $(BUILD_OVERLAY)/
 	cp -r build/winxshell/WinXShell/. $(BUILD_OVERLAY)/WinXShell/
 	cp build/pestart/pestart.exe $(BUILD_OVERLAY)/Windows/System32/pestart.exe
 	mkdir -p "$(BUILD_OVERLAY)/Program Files/Explorer++"
 	cp -r build/explorerpp/. "$(BUILD_OVERLAY)/Program Files/Explorer++/"
-	mkdir -p $(BUILD_OVERLAY)/Windows/System32
 	cp build/pecmd/PECMD.EXE $(BUILD_OVERLAY)/Windows/System32/PECMD.EXE
 	cp "$(BUILD_OVERLAY)/Program Files/Explorer++/Explorer++.exe" $(BUILD_OVERLAY)/Windows/explorer.exe
 	mkdir -p $(BUILD_OVERLAY)/Windows/System32/drivers

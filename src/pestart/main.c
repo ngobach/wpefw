@@ -507,7 +507,9 @@ static void RenderScene(double openE) {
     for (int y = 0; y < g_h; y++) {
         for (int x = 0; x < g_w; x++) {
             int in_panel = 1;
-            if (y < RAD) {
+            if (y < dy) {
+                in_panel = 0;
+            } else if (y < dy + RAD) {
                 if (x < RAD || x >= g_w - RAD) {
                     if (!(b[0] | b[1] | b[2])) {
                         in_panel = 0;
@@ -522,6 +524,16 @@ static void RenderScene(double openE) {
     }
 }
 
+
+static void SetStartButtonActive(int active) {
+    HWND hwndTray = FindWindowA("Shell_TrayWnd", NULL);
+    if (hwndTray) {
+        HWND hwndStart = FindWindowExA(hwndTray, NULL, "Start", NULL);
+        if (hwndStart) {
+            SendMessageA(hwndStart, BM_SETSTATE, active ? TRUE : FALSE, 0);
+        }
+    }
+}
 
 static void Present(int fade) {
     BLENDFUNCTION bf;
@@ -810,6 +822,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             ShowWindow(hwnd, SW_HIDE);
             SetPropA(hwnd, "LastHideTime", (HANDLE)(UINT_PTR)GetTickCount());
             WriteLog("[WndProc] WM_ACTIVATE: Set LastHideTime=%u\n", GetTickCount());
+            SetStartButtonActive(0);
         }
         return 0;
 
@@ -821,6 +834,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             ShowWindow(hwnd, SW_HIDE);
             SetPropA(hwnd, "LastHideTime", (HANDLE)(UINT_PTR)now);
             WriteLog("[WndProc] WM_PESTART_TOGGLE: Set LastHideTime=%u\n", now);
+            SetStartButtonActive(0);
         } else {
             DWORD lastHide = (DWORD)(UINT_PTR)GetPropA(hwnd, "LastHideTime");
             if (lastHide != 0 && now - lastHide < 100) {
@@ -841,6 +855,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             g_selEnd = g_caretPos;
             g_dirty = 1;
             TriggerBackgroundScan();
+            SetStartButtonActive(1);
             SetWindowPos(hwnd, HWND_TOPMOST, g_winX, g_winY, 0, 0, SWP_NOSIZE);
             RenderScene(0);
             Present(0);
@@ -979,6 +994,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
         DispatchMessageA(&msg);
     }
 
+    SetStartButtonActive(0);
     for (int i = 0; i < g_nitems; i++)
         if (g_items[i].hIcon) DestroyIcon(g_items[i].hIcon);
     DeleteObject(g_fNorm); DeleteObject(g_fBold);

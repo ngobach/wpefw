@@ -80,6 +80,7 @@ int    g_selStart = 0;
 int    g_selEnd = 0;
 int    g_dirty = 1;
 static int    g_everAnimating = 0;
+static HANDLE g_hChange = INVALID_HANDLE_VALUE;
 
 
 /* ---------------------------------------------------------------- */
@@ -854,7 +855,15 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             g_selStart = g_caretPos;
             g_selEnd = g_caretPos;
             g_dirty = 1;
-            TriggerBackgroundScan();
+            if (g_hChange != INVALID_HANDLE_VALUE) {
+                if (WaitForSingleObject(g_hChange, 0) == WAIT_OBJECT_0) {
+                    WriteLog("[WndProc] Start menu folder changed. Refreshing shortcuts...\n");
+                    TriggerBackgroundScan();
+                    FindNextChangeNotification(g_hChange);
+                }
+            } else {
+                TriggerBackgroundScan();
+            }
             SetStartButtonActive(1);
             SetWindowPos(hwnd, HWND_TOPMOST, g_winX, g_winY, 0, 0, SWP_NOSIZE);
             RenderScene(0);
@@ -937,8 +946,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
     CoInitialize(NULL);
 
     char pathUser[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PROGRAMS, NULL, 0, pathUser)))
+    if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PROGRAMS, NULL, 0, pathUser))) {
         ScanProgramsDir(pathUser, 0);
+        g_hChange = FindFirstChangeNotificationA(
+            pathUser,
+            TRUE,
+            FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE
+        );
+    }
 
     lstrcpyA(g_userName, "Administrator");
 
@@ -995,6 +1010,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
     }
 
     SetStartButtonActive(0);
+    if (g_hChange != INVALID_HANDLE_VALUE) {
+        FindCloseChangeNotification(g_hChange);
+    }
     for (int i = 0; i < g_nitems; i++)
         if (g_items[i].hIcon) DestroyIcon(g_items[i].hIcon);
     DeleteObject(g_fNorm); DeleteObject(g_fBold);

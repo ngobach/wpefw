@@ -34,6 +34,7 @@ typedef struct {
 
 #define PE_IMGUI_IMPLEMENTATION
 #include "pe_imgui.h"
+#include "widgets.h"
 
 static Item    g_items[MAX_ITEMS];
 static int     g_nitems = 0;
@@ -51,6 +52,8 @@ COLORREF g_accent = RGB(0, 120, 215);
 
 /* fonts */
 HFONT g_fNorm, g_fBold, g_fTitle, g_fTile, g_fMDL2;
+HFONT g_fWidgetTime = NULL;
+HFONT g_fWidgetDesc = NULL;
 
 /* surface (layered) */
 static HDC    g_hdc = NULL;
@@ -402,16 +405,40 @@ static void RenderScene(double openE) {
                 drawn++;
             }
         } else {
-            /* Draw tiles empty state */
+            /* Draw tiles empty state (compact layout) */
             int cx = tilesX + tilesW / 2;
-            int cy = listTop + 80 + dy;
+            int cy = listTop + 32 + dy;
             DrawGlyph(hdc, 0xE718, cx, cy, RGB(90, 90, 100), g_fMDL2);
             
-            RECT rTitle = { tilesX + 10, cy + 20, tilesX + tilesW - 10, cy + 40 };
+            RECT rTitle = { tilesX + 10, cy + 20, tilesX + tilesW - 10, cy + 36 };
             DrawTextC(hdc, "No pinned apps", rTitle, DT_CENTER | DT_SINGLELINE, g_fBold, RGB(160, 160, 170));
             
-            RECT rSub = { tilesX + 20, cy + 42, tilesX + tilesW - 20, cy + 120 };
+            RECT rSub = { tilesX + 15, cy + 38, tilesX + tilesW - 15, cy + 80 };
             DrawTextC(hdc, "Put shortcuts in the Programs\\Pinned folder to pin them here.", rSub, DT_CENTER | DT_WORDBREAK, g_fNorm, RGB(110, 110, 120));
+        }
+
+        /* Widgets Section */
+        {
+            int pinnedBottomY = contentTop + HEADER_H;
+            if (npinned > 0) {
+                int tileGap = 12, tileH = 74;
+                int drawn = 0;
+                for (int i = 0; i < g_nitems && drawn < 8; i++) {
+                    if (g_items[i].type == IT_PROGRAM && g_items[i].tile) drawn++;
+                }
+                int numRows = (drawn + 1) / 2;
+                pinnedBottomY += numRows * tileH + (numRows - 1) * tileGap;
+            } else {
+                pinnedBottomY += 112;
+            }
+
+            int widgetsSectionY = pinnedBottomY + 12;
+            RECT trw = {tilesX, widgetsSectionY + dy, g_w - PAD, widgetsSectionY + HEADER_H + dy};
+            DrawTextC(hdc, "Widgets", trw, DT_LEFT | DT_VCENTER | DT_SINGLELINE,
+                      g_fBold, RGB(210, 210, 220));
+
+            int widgetY = widgetsSectionY + HEADER_H + 6;
+            DrawWallclockWidget(hdc, tilesX, widgetY, tilesW, 64);
         }
 
         /* bottom bar */
@@ -600,6 +627,15 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     case WM_TIMER: {
         DWORD now = GetTickCount();
         if (!IsWindowVisible(hwnd) && !g_closing) return 0;
+
+        /* Wallclock updates every second when visible */
+        static int lastSecond = -1;
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+        if (st.wSecond != lastSecond) {
+            lastSecond = st.wSecond;
+            g_dirty = 1;
+        }
 
         /* Blinking caret dirty check (forces redraw every 500ms when visible) */
         static int lastBlink = 0;
@@ -957,7 +993,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
 
     lstrcpyA(g_userName, "Administrator");
 
-    g_w = 560; g_h = 518;
+    g_w = 560; g_h = 590;
     int sx = GetSystemMetrics(SM_CXSCREEN);
     int sy = GetSystemMetrics(SM_CYSCREEN);
     RECT wa = {0, 0, sx, sy};
@@ -985,6 +1021,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
     g_fTitle = CreateFontA(16, 0, 0, 0, FW_BOLD,   FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe UI");
     g_fTile  = CreateFontA(12, 0, 0, 0, FW_BOLD,   FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe UI");
     g_fMDL2  = CreateFontA(20, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe MDL2 Assets");
+    g_fWidgetTime = CreateFontA(32, 0, 0, 0, FW_BOLD,   FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe UI");
+    g_fWidgetDesc = CreateFontA(12, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Segoe UI");
 
     WNDCLASSEXA wc = {0};
     wc.cbSize = sizeof(wc);
@@ -1017,6 +1055,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrev, LPSTR lpCmd, int nShow)
         if (g_items[i].hIcon) DestroyIcon(g_items[i].hIcon);
     DeleteObject(g_fNorm); DeleteObject(g_fBold);
     DeleteObject(g_fTitle); DeleteObject(g_fTile); DeleteObject(g_fMDL2);
+    if (g_fWidgetTime) DeleteObject(g_fWidgetTime);
+    if (g_fWidgetDesc) DeleteObject(g_fWidgetDesc);
     DeleteObject(g_hBmp); DeleteObject(g_panelBmp);
     DeleteDC(g_hdc); DeleteDC(g_panelDC);
     CoUninitialize();
